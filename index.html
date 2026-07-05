@@ -1,0 +1,585 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Mercurio Send</title>
+  <link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+  <div id="app">
+    <!-- Pantalla de Login -->
+    <div id="login-screen" class="screen active">
+      <div class="login-card">
+        <div class="login-header">
+          <div class="logo">
+            <svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <path d="M21 11.5a8.38 8.38 0 0 1-.9 3.8 8.5 8.5 0 0 1-7.6 4.7 8.38 8.38 0 0 1-3.8-.9L3 21l1.9-5.7a8.38 8.38 0 0 1-.9-3.8 8.5 8.5 0 0 1 4.7-7.6 8.38 8.38 0 0 1 3.8-.9h.5a8.48 8.48 0 0 1 8 8v.5z"/>
+            </svg>
+          </div>
+          <h1>Mercurio Send</h1>
+          <p class="subtitle">Plataforma de envío masivo de mensajes</p>
+        </div>
+        <form id="login-form" class="login-form">
+          <div class="form-group">
+            <label for="api-key">API Key</label>
+            <div class="input-wrapper">
+              <input type="password" id="api-key" placeholder="Ingrese su API Key" required>
+              <button type="button" class="toggle-password" onclick="App.togglePassword('api-key', this)">
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                  <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/>
+                  <circle cx="12" cy="12" r="3"/>
+                </svg>
+              </button>
+            </div>
+          </div>
+          <button type="submit" class="btn btn-primary btn-full">
+            <span class="btn-text">Ingresar</span>
+            <span class="btn-loader" style="display:none">
+              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <circle cx="12" cy="12" r="10" stroke-dasharray="31.4 31.4" stroke-linecap="round">
+                  <animateTransform attributeName="transform" type="rotate" from="0 12 12" to="360 12 12" dur="1s" repeatCount="indefinite"/>
+                </circle>
+              </svg>
+              Validando...
+            </span>
+          </button>
+        </form>
+        <p class="login-error" id="login-error"></p>
+      </div>
+    </div>
+
+    <!-- Aplicación principal -->
+    <div id="main-app" class="screen">
+      <!-- Banner modo demo -->
+      <div id="demo-banner" class="demo-banner" style="display:none">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/>
+        </svg>
+        <span><strong>Modo Demo</strong> — La API de Render no está disponible. Los datos son simulados.</span>
+        <button class="btn btn-outline btn-sm" onclick="API.setMockMode(false); location.reload()">Reintentar conexión</button>
+      </div>
+      <!-- Barra superior -->
+      <header class="topbar">
+        <div class="topbar-left">
+          <button class="btn-icon" id="menu-toggle" onclick="App.toggleSidebar()">
+            <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <line x1="3" y1="12" x2="21" y2="12"/><line x1="3" y1="6" x2="21" y2="6"/><line x1="3" y1="18" x2="21" y2="18"/>
+            </svg>
+          </button>
+          <div class="topbar-brand">
+            <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="#25D366" stroke-width="2">
+              <path d="M21 11.5a8.38 8.38 0 0 1-.9 3.8 8.5 8.5 0 0 1-7.6 4.7 8.38 8.38 0 0 1-3.8-.9L3 21l1.9-5.7a8.38 8.38 0 0 1-.9-3.8 8.5 8.5 0 0 1 4.7-7.6 8.38 8.38 0 0 1 3.8-.9h.5a8.48 8.48 0 0 1 8 8v.5z"/>
+            </svg>
+            <span>Mercurio Send</span>
+          </div>
+        </div>
+        <div class="topbar-right">
+          <span class="badge-msg" id="badge-msg-count">0 / 0 mensajes</span>
+          <button class="btn btn-outline btn-sm" onclick="App.logout()">Cerrar sesión</button>
+        </div>
+      </header>
+
+      <div class="main-layout">
+        <!-- Sidebar -->
+        <nav class="sidebar" id="sidebar">
+          <ul class="nav-list">
+            <li>
+              <a class="nav-item active" data-section="dashboard" onclick="App.navigateTo('dashboard')">
+                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                  <rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/><rect x="14" y="14" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/>
+                </svg>
+                Dashboard
+              </a>
+            </li>
+            <li>
+              <a class="nav-item" data-section="config" onclick="App.navigateTo('config')">
+                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                  <circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06A1.65 1.65 0 0 0 4.68 15a1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06A1.65 1.65 0 0 0 9 4.68a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06A1.65 1.65 0 0 0 19.4 9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z"/>
+                </svg>
+                Configuración
+              </a>
+            </li>
+            <li>
+              <a class="nav-item" data-section="prospects" onclick="App.navigateTo('prospects')">
+                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                  <path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/>
+                </svg>
+                Prospectos
+              </a>
+            </li>
+            <li>
+              <a class="nav-item" data-section="send" onclick="App.navigateTo('send')">
+                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                  <line x1="22" y1="2" x2="11" y2="13"/><polygon points="22 2 15 22 11 13 2 9 22 2"/>
+                </svg>
+                Enviar Mensajes
+              </a>
+            </li>
+            <li>
+              <a class="nav-item" data-section="history" onclick="App.navigateTo('history')">
+                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                  <circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/>
+                </svg>
+                Historial
+              </a>
+            </li>
+          </ul>
+        </nav>
+
+        <!-- Contenido principal -->
+        <main class="content" id="main-content">
+
+          <!-- DASHBOARD -->
+          <section id="section-dashboard" class="section active">
+            <div class="section-header">
+              <h2>Dashboard</h2>
+              <p>Resumen de tu cuenta y actividad</p>
+            </div>
+            <div class="stats-grid" id="stats-container">
+              <div class="stat-card">
+                <div class="stat-icon state-primary">
+                  <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <path d="M21 11.5a8.38 8.38 0 0 1-.9 3.8 8.5 8.5 0 0 1-7.6 4.7 8.38 8.38 0 0 1-3.8-.9L3 21l1.9-5.7a8.38 8.38 0 0 1-.9-3.8 8.5 8.5 0 0 1 4.7-7.6 8.38 8.38 0 0 1 3.8-.9h.5a8.48 8.48 0 0 1 8 8v.5z"/>
+                  </svg>
+                </div>
+                <div class="stat-info">
+                  <span class="stat-label">Plan</span>
+                  <span class="stat-value" id="stat-plan">-</span>
+                </div>
+              </div>
+              <div class="stat-card">
+                <div class="stat-icon state-success">
+                  <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <path d="M22 12h-4l-3 9L9 3l-3 9H2"/>
+                  </svg>
+                </div>
+                <div class="stat-info">
+                  <span class="stat-label">Enviados</span>
+                  <span class="stat-value" id="stat-usadas">0</span>
+                </div>
+              </div>
+              <div class="stat-card">
+                <div class="stat-icon state-warning">
+                  <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <path d="M12 2L2 7l10 5 10-5-10-5z"/><path d="M2 17l10 5 10-5"/><path d="M2 12l10 5 10-5"/>
+                  </svg>
+                </div>
+                <div class="stat-info">
+                  <span class="stat-label">Límite mensual / Disponibles</span>
+                  <span class="stat-value" id="stat-max">0</span>
+                  <span class="summary-label" id="dash-cutoff" style="font-size:11px;margin-top:2px"></span>
+                </div>
+              </div>
+              <div class="stat-card">
+                <div class="stat-icon state-danger">
+                  <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <rect x="3" y="4" width="18" height="18" rx="2" ry="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/>
+                  </svg>
+                </div>
+                <div class="stat-info">
+                  <span class="stat-label">Vigencia hasta</span>
+                  <span class="stat-value" id="stat-vigencia">-</span>
+                </div>
+              </div>
+            </div>
+
+            <!-- Barra de progreso -->
+            <div class="card">
+              <h3>Uso del plan</h3>
+              <div class="progress-container">
+                <div class="progress-bar" id="progress-bar">
+                  <div class="progress-fill" id="progress-fill" style="width: 0%"></div>
+                </div>
+                <span class="progress-text" id="progress-text">0%</span>
+              </div>
+              <div class="quick-actions">
+                <button class="btn btn-primary" onclick="App.navigateTo('send')">
+                  <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <line x1="22" y1="2" x2="11" y2="13"/><polygon points="22 2 15 22 11 13 2 9 22 2"/>
+                  </svg>
+                  Ir a enviar mensajes
+                </button>
+                <button class="btn btn-outline" onclick="App.navigateTo('prospects')">
+                  <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/>
+                  </svg>
+                  Administrar prospectos
+                </button>
+              </div>
+            </div>
+
+            <!-- Últimos mensajes -->
+            <div class="card">
+              <h3>Últimos mensajes</h3>
+              <div class="table-container" id="recent-messages">
+                <table class="table">
+                  <thead>
+                    <tr>
+                      <th>Destino</th>
+                      <th>Tipo</th>
+                      <th>Estado</th>
+                      <th>Fecha</th>
+                    </tr>
+                  </thead>
+                  <tbody id="recent-messages-body">
+                    <tr><td colspan="4" class="empty-state">No hay mensajes recientes</td></tr>
+                  </tbody>
+                </table>
+              </div>
+            </div>
+          </section>
+
+          <!-- CONFIGURACIÓN - GESTOR DE PLANTILLAS -->
+          <section id="section-config" class="section">
+            <div class="section-header">
+              <h2>Gestor de Plantillas</h2>
+              <p>Defina las plantillas de mensajes que usará para sus envíos</p>
+            </div>
+
+            <div class="toolbar">
+              <button class="btn btn-primary" onclick="App.showTemplateModal()">
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                  <line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/>
+                </svg>
+                Nueva plantilla
+              </button>
+              <span class="toolbar-counter" id="template-counter">0 plantillas</span>
+            </div>
+
+            <div id="template-list" class="template-list">
+              <div class="empty-state">No hay plantillas definidas. Cree una nueva.</div>
+            </div>
+
+            <!-- Modal Plantilla -->
+            <div class="modal" id="template-modal" style="display:none">
+              <div class="modal-backdrop" onclick="App.hideTemplateModal()"></div>
+              <div class="modal-content">
+                <div class="modal-header">
+                  <h3 id="template-modal-title">Nueva plantilla</h3>
+                  <button class="btn-icon" onclick="App.hideTemplateModal()">
+                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                      <line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/>
+                    </svg>
+                  </button>
+                </div>
+                <form id="template-form">
+                  <input type="hidden" id="template-id" value="">
+                  <div class="form-row">
+                    <div class="form-group">
+                      <label for="tpl-name">Nombre descriptivo <span class="req">*</span></label>
+                      <input type="text" id="tpl-name" placeholder="Ej: Oferta WhatsApp" required>
+                    </div>
+                    <div class="form-group">
+                      <label for="tpl-template-name">Nombre en Meta <span class="req">*</span></label>
+                      <input type="text" id="tpl-template-name" placeholder="Ej: ofrecer_whatsapp2" required>
+                    </div>
+                  </div>
+                  <div class="form-row">
+                    <div class="form-group">
+                      <label for="tpl-language">Idioma de la plantilla</label>
+                      <select id="tpl-language">
+                        <option value="es_CO">Español Colombia (es_CO)</option>
+                        <option value="es_MX">Español México (es_MX)</option>
+                        <option value="es">Español (es)</option>
+                        <option value="en">Inglés (en)</option>
+                      </select>
+                    </div>
+                    <div class="form-group">
+                      <label for="tpl-num-textos">Cantidad de variables de texto</label>
+                      <input type="number" id="tpl-num-textos" min="0" max="10" value="4">
+                    </div>
+                  </div>
+                  <div class="form-row">
+                    <div class="form-group">
+                      <label>
+                        <input type="checkbox" id="tpl-has-header">
+                        Incluir imagen de cabecera
+                      </label>
+                    </div>
+                    <div class="form-group">
+                      <label for="tpl-num-footer">Número de imágenes al final del mensaje</label>
+                      <select id="tpl-num-footer">
+                        <option value="0">0 - Sin imágenes</option>
+                        <option value="1">1 imagen</option>
+                        <option value="2">2 imágenes</option>
+                        <option value="3">3 imágenes</option>
+                        <option value="4">4 imágenes</option>
+                      </select>
+                    </div>
+                  </div>
+                  <div id="tpl-footer-captions"></div>
+                  <div class="form-group">
+                    <label for="tpl-example">Ejemplo del mensaje</label>
+                    <textarea id="tpl-example" rows="4" placeholder="Escriba un ejemplo de cómo se verá el mensaje, usando las variables {{texto1}}, {{nombre_clie}}, etc."></textarea>
+                  </div>
+                  <div class="form-actions">
+                    <button type="button" class="btn btn-outline" onclick="App.hideTemplateModal()">Cancelar</button>
+                    <button type="submit" class="btn btn-primary">Guardar plantilla</button>
+                  </div>
+                </form>
+              </div>
+            </div>
+          </section>
+
+          <!-- PROSPECTOS -->
+          <section id="section-prospects" class="section">
+            <div class="section-header">
+              <h2>Prospectos</h2>
+              <p>Destinatarios y envío de mensajes</p>
+            </div>
+
+            <div class="card">
+              <div class="toolbar">
+                <div class="form-group" style="min-width:260px;margin-bottom:0">
+                  <label for="pros-template-select" style="font-size:12px">Plantilla para enviar</label>
+                  <select id="pros-template-select" onchange="App.onProsTemplateChange()">
+                    <option value="">-- Seleccione --</option>
+                  </select>
+                </div>
+                <div style="text-align:right;font-size:12px;color:var(--text-secondary);margin-left:auto">
+                  <div>Plan: <strong id="pros-summary-plan">-</strong></div>
+                  <div>Disp: <strong id="pros-summary-available">0</strong> <span id="pros-summary-cutoff"></span></div>
+                </div>
+              </div>
+            </div>
+
+            <div class="card">
+              <div class="toolbar" style="margin-bottom:12px">
+                <button class="btn btn-primary" onclick="App.showProspectModal()">
+                  <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+                  Agregar
+                </button>
+                <button class="btn btn-outline" onclick="document.getElementById('import-csv').click()">
+                  <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
+                  Importar
+                </button>
+                <input type="file" id="import-csv" accept=".csv,text/csv" style="display:none">
+                <a href="#" onclick="App.downloadSampleCSV();return false" style="font-size:13px;color:var(--primary)">CSV ejemplo</a>
+                <span class="toolbar-counter" id="prospect-counter">0 prospectos</span>
+              </div>
+
+              <div class="table-container">
+                <table class="table">
+                  <thead id="prospects-table-head">
+                    <tr id="prospects-header-row">
+                      <th>Nombre</th>
+                      <th>Teléfono</th>
+                      <!-- dynamic columns inserted here by JS -->
+                      <th>Estado</th>
+                      <th>Acciones</th>
+                    </tr>
+                  </thead>
+                  <tbody id="prospects-table-body">
+                    <tr><td colspan="6" class="empty-state">No hay prospectos.</td></tr>
+                  </tbody>
+                </table>
+              </div>
+
+              <div style="margin-top:16px;padding-top:16px;border-top:1px solid var(--border);display:flex;align-items:center;gap:16px;flex-wrap:wrap">
+                <label><input type="checkbox" id="pros-only-pending" checked> Solo pendientes</label>
+                <div style="margin-left:auto;display:flex;gap:8px;align-items:center">
+                  <button class="btn btn-primary btn-lg" id="btn-pros-send" onclick="App.startSendingFromProspects()">
+                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="22" y1="2" x2="11" y2="13"/><polygon points="22 2 15 22 11 13 2 9 22 2"/></svg>
+                    <span id="btn-pros-send-text">Enviar mensajes</span>
+                  </button>
+                </div>
+              </div>
+            </div>
+
+            <div class="card" id="pros-progress-card" style="display:none">
+              <h3>Progreso</h3>
+              <div class="progress-container">
+                <div class="progress-bar"><div class="progress-fill" id="pros-progress-fill" style="width:0%"></div></div>
+                <span class="progress-text" id="pros-progress-text">0 / 0</span>
+              </div>
+              <div class="log-container" id="pros-log"></div>
+            </div>
+
+            <div class="modal" id="prospect-modal" style="display:none">
+              <div class="modal-backdrop" onclick="App.hideProspectModal()"></div>
+              <div class="modal-content">
+                <div class="modal-header">
+                  <h3 id="prospect-modal-title">Prospecto</h3>
+                  <button class="btn-icon" onclick="App.hideProspectModal()"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg></button>
+                </div>
+                <form id="prospect-form" onsubmit="App.saveProspect(event)">
+                  <input type="hidden" id="prospect-id" value="">
+                  <div class="form-group">
+                    <label for="prospect-name">Nombre <span class="req">*</span></label>
+                    <input type="text" id="prospect-name" required>
+                  </div>
+                  <div class="form-group">
+                    <label for="prospect-phone">Teléfono <span class="req">*</span></label>
+                    <input type="text" id="prospect-phone" placeholder="573001234567" required>
+                  </div>
+                  <div id="prospect-dynamic-fields"></div>
+                  <div class="form-actions">
+                    <button type="button" class="btn btn-outline" onclick="App.hideProspectModal()">Cancelar</button>
+                    <button type="submit" class="btn btn-primary">Guardar</button>
+                  </div>
+                </form>
+              </div>
+            </div>
+
+            <!-- Modal Editor de texto de imagen -->
+            <div class="modal" id="caption-modal" style="display:none">
+              <div class="modal-backdrop" onclick="App.hideCaptionEditor()"></div>
+              <div class="modal-content" style="max-width:500px">
+                <div class="modal-header">
+                  <h3 id="caption-modal-title">Texto de imagen</h3>
+                  <button class="btn-icon" onclick="App.hideCaptionEditor()"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg></button>
+                </div>
+                <form id="caption-form" onsubmit="App.saveCaption(event)">
+                  <input type="hidden" id="caption-prospect-idx" value="">
+                  <input type="hidden" id="caption-img-idx" value="">
+                  <div class="form-group">
+                    <label for="caption-text">Texto para la imagen</label>
+                    <textarea id="caption-text" rows="3" placeholder="Texto opcional que aparecerá debajo de la imagen"></textarea>
+                  </div>
+                  <div class="form-actions">
+                    <button type="button" class="btn btn-outline" onclick="App.hideCaptionEditor()">Cancelar</button>
+                    <button type="submit" class="btn btn-primary">Guardar</button>
+                  </div>
+                </form>
+              </div>
+            </div>
+          </section>
+
+          <!-- ENVIAR MENSAJES -->
+          <section id="section-send" class="section">
+            <div class="section-header">
+              <h2>Enviar Mensajes</h2>
+              <p>Seleccione la plantilla, configure los valores y envíe</p>
+            </div>
+
+            <!-- Paso 1: Seleccionar plantilla -->
+            <div class="card" id="send-step-template">
+              <h3>1. Seleccione la plantilla</h3>
+              <div class="form-group">
+                <select id="send-template-select" onchange="App.onTemplateChange()">
+                  <option value="">-- Seleccione una plantilla --</option>
+                </select>
+              </div>
+              <div id="send-template-preview" class="template-preview" style="display:none">
+                <div class="summary-grid">
+                  <div><span class="summary-label">Plantilla Meta</span><span class="summary-value" id="send-preview-name">-</span></div>
+                  <div><span class="summary-label">Idioma</span><span class="summary-value" id="send-preview-lang">-</span></div>
+                  <div><span class="summary-label">Cabecera</span><span class="summary-value" id="send-preview-header">-</span></div>
+                  <div><span class="summary-label">Textos</span><span class="summary-value" id="send-preview-textos">-</span></div>
+                  <div><span class="summary-label">Imágenes final</span><span class="summary-value" id="send-preview-footer">-</span></div>
+                </div>
+                <div class="tpl-meta" id="send-preview-example" style="display:none;margin-top:12px;padding:10px;background:#FFF;border-radius:6px;border:1px solid var(--border);font-size:13px;line-height:1.5;white-space:pre-wrap"></div>
+              </div>
+            </div>
+
+            <!-- Paso 2: Valores de la plantilla -->
+            <div class="card" id="send-step-values" style="display:none">
+              <h3>2. Valores del mensaje</h3>
+              <p class="field-hint">Complete los valores requeridos por la plantilla seleccionada</p>
+              <div id="send-dynamic-fields"></div>
+            </div>
+
+            <!-- Paso 3: Prospectos y envío -->
+            <div class="card" id="send-step-send" style="display:none">
+              <h3>3. Enviar</h3>
+              <div class="send-options">
+                <div class="form-group">
+                  <label>
+                    <input type="checkbox" id="send-only-pending" checked>
+                    Enviar solo a prospectos sin enviar
+                  </label>
+                </div>
+              </div>
+              <div class="summary-grid" style="margin-bottom:16px">
+                <div>
+                  <span class="summary-label">Prospectos a enviar</span>
+                  <span class="summary-value" id="send-summary-count">0</span>
+                </div>
+                <div>
+                  <span class="summary-label">Plan</span>
+                  <span class="summary-value" id="send-summary-plan">-</span>
+                </div>
+                <div>
+                  <span class="summary-label">Total mensajes</span>
+                  <span class="summary-value" id="send-summary-total">0</span>
+                </div>
+                <div>
+                  <span class="summary-label">Mensajes disponibles</span>
+                  <span class="summary-value" id="send-summary-available">0</span>
+                  <span class="summary-label" id="send-summary-cutoff" style="font-size:11px;margin-top:2px"></span>
+                </div>
+              </div>
+              <div class="send-actions">
+                <button class="btn btn-primary btn-lg" id="btn-send" onclick="App.startSending()">
+                  <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <line x1="22" y1="2" x2="11" y2="13"/><polygon points="22 2 15 22 11 13 2 9 22 2"/>
+                  </svg>
+                  <span id="btn-send-text">Iniciar envío masivo</span>
+                </button>
+                <button class="btn btn-danger-solid btn-lg" onclick="App.clearSendForm()">
+                  <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <polyline points="1 4 1 10 7 10"/><path d="M3.51 15a9 9 0 1 0 2.13-9.36L1 10"/>
+                  </svg>
+                  Limpiar
+                </button>
+              </div>
+            </div>
+
+            <!-- Progreso de envío -->
+            <div class="card" id="send-progress-card" style="display:none">
+              <h3>Progreso del envío</h3>
+              <div class="progress-container">
+                <div class="progress-bar">
+                  <div class="progress-fill" id="send-progress-fill" style="width: 0%"></div>
+                </div>
+                <span class="progress-text" id="send-progress-text">0 / 0</span>
+              </div>
+              <div class="log-container" id="send-log"></div>
+            </div>
+          </section>
+
+          <!-- HISTORIAL -->
+          <section id="section-history" class="section">
+            <div class="section-header">
+              <h2>Historial de mensajes</h2>
+              <p>Consulte el estado de los mensajes enviados</p>
+            </div>
+            <div class="toolbar">
+              <button class="btn btn-outline" onclick="App.loadHistory()">
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                  <polyline points="23 4 23 10 17 10"/><path d="M20.49 15a9 9 0 1 1-2.12-9.36L23 10"/>
+                </svg>
+                Actualizar
+              </button>
+              <span class="toolbar-counter" id="history-counter">0 registros</span>
+            </div>
+            <div class="table-container">
+              <table class="table">
+                <thead>
+                  <tr>
+                    <th>ID</th>
+                    <th>Destino</th>
+                    <th>Tipo</th>
+                    <th>Mensaje</th>
+                    <th>Estado</th>
+                    <th>Error</th>
+                    <th>Fecha</th>
+                  </tr>
+                </thead>
+                <tbody id="history-table-body">
+                  <tr><td colspan="7" class="empty-state">No hay registros de mensajes</td></tr>
+                </tbody>
+              </table>
+            </div>
+          </section>
+
+        </main>
+      </div>
+    </div>
+  </div>
+
+  <script src="js/api.js"></script>
+  <script src="js/app.js"></script>
+</body>
+</html>
