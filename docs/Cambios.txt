@@ -1,0 +1,53 @@
+=== MERCURIO SEND — REGISTRO DE CAMBIOS ===
+
+Fecha: 5/07/2026
+
+============================================================
+CREACIÓN DE DOCUMENTACIÓN TÉCNICA
+============================================================
+
+Se crearon los siguientes archivos en docs/:
+
+- PROJECT_CONTEXT.md     : Descripción general, stack, estructura
+- API_SPEC.md            : Endpoints, payloads, mock data
+- ARCHITECTURE_MVP.md    : Arquitectura actual y destino
+- DATABASE_SCHEMA.md     : Esquema PostgreSQL (6 tablas)
+- SMART_CONTRACT_SPEC.md : No aplica (proyecto tradicional)
+- TODO_MVP.md            : Estado de tareas por fase
+- Cambios.txt            : Registro de cambios
+
+============================================================
+CONFIGURACIÓN DEL REPOSITORIO
+============================================================
+
+- Repositorio Git inicializado en C:\Desarrollos\WhatsApp_API_App
+- Remote configurado: https://github.com/johergo2/Whatsapp_API_App.git
+- Branch: main
+- Commit inicial realizado y subido a GitHub
+- Archivos incluidos: index.html, css/style.css, js/api.js,
+  js/app.js, docs/*.md, y demás archivos del proyecto
+
+============================================================
+CREACIÓN DE BASE DE DATOS (SUPABASE)
+============================================================
+
+- Proyecto creado en Supabase (plan Free)
+- Región: us-east-1 / southamerica-east-1
+- Tablas creadas via SQL Editor:
+  * clientes
+  * variables
+  * plantillas
+  * prospectos
+  * mensajes
+  * send_form_data
+- Índices creados: idx_prospectos_cliente, idx_prospectos_estado,
+  idx_plantillas_cliente, idx_mensajes_cliente, idx_mensajes_fecha
+- RLS no activado (se configurará después con autenticación)
+
+============================================================
+PENDIENTE
+============================================================
+
+- Desplegar en Vercel
+- Reemplazar localStorage por Supabase en api.js
+- Probar flujo completo con datos reales
