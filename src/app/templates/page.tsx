@@ -2,9 +2,10 @@
 
 import { useApp } from '@/lib/store';
 import { Sidebar } from '@/components/ui/Sidebar';
-import { useState, useEffect } from 'react';
+import { useState } from 'react';
 import { Card } from '@/components/ui/Card';
 import { Modal } from '@/components/ui/Modal';
+import { addTemplate, updateTemplate, deleteTemplate } from '@/lib/services';
 import type { Plantilla } from '@/types';
 
 export default function TemplatesPage() {
@@ -59,10 +60,9 @@ export default function TemplatesPage() {
     setModalOpen(true);
   }
 
-  function save() {
+  async function save() {
     if (!form.name || !form.template_name) return;
-    const tpl: Plantilla = {
-      id: form.id || crypto.randomUUID(),
+    const tplData = {
       name: form.name,
       template_name: form.template_name,
       language_code: form.language_code,
@@ -72,16 +72,40 @@ export default function TemplatesPage() {
       footer_captions: form.footer_captions.slice(0, form.num_footer),
       message_example: form.message_example,
     };
+
     if (editingId) {
-      dispatch({ type: 'UPDATE_TEMPLATE', payload: tpl });
+      const updated: Plantilla = { id: editingId, ...tplData };
+      if (!state.demoMode && state.cliente?.id) {
+        try {
+          await updateTemplate(updated);
+        } catch (e) {
+          console.error('Error updating template in Supabase:', e);
+        }
+      }
+      dispatch({ type: 'UPDATE_TEMPLATE', payload: updated });
     } else {
-      dispatch({ type: 'ADD_TEMPLATE', payload: tpl });
+      let created = { id: crypto.randomUUID(), ...tplData };
+      if (!state.demoMode && state.cliente?.id) {
+        try {
+          created = await addTemplate(state.cliente.id, tplData);
+        } catch (e) {
+          console.error('Error adding template to Supabase:', e);
+        }
+      }
+      dispatch({ type: 'ADD_TEMPLATE', payload: created });
     }
     setModalOpen(false);
   }
 
-  function deleteTpl(id: string) {
+  async function deleteTpl(id: string) {
     if (!confirm('¿Eliminar esta plantilla?')) return;
+    if (!state.demoMode) {
+      try {
+        await deleteTemplate(id);
+      } catch (e) {
+        console.error('Error deleting template from Supabase:', e);
+      }
+    }
     dispatch({ type: 'DELETE_TEMPLATE', payload: id });
   }
 

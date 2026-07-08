@@ -4,6 +4,7 @@ import { useApp } from '@/lib/store';
 import { Sidebar } from '@/components/ui/Sidebar';
 import { useState } from 'react';
 import { Card } from '@/components/ui/Card';
+import { upsertSendFormData } from '@/lib/services';
 import type { SendFormValues } from '@/types';
 
 export default function SendPage() {
@@ -31,9 +32,16 @@ export default function SendPage() {
     setForm((prev) => ({ ...prev, [field]: value }));
   }
 
-  function saveForm() {
+  async function saveForm() {
     if (selectedTplId) {
       dispatch({ type: 'SET_SEND_FORM_DATA', payload: { templateId: selectedTplId, values: form } });
+      if (!state.demoMode && state.cliente?.id) {
+        try {
+          await upsertSendFormData(state.cliente.id, selectedTplId, form);
+        } catch (e) {
+          console.error('Error saving form data to Supabase:', e);
+        }
+      }
     }
   }
 

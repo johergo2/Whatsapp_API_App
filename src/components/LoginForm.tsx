@@ -3,6 +3,7 @@
 import { useState } from 'react';
 import { useApp } from '@/lib/store';
 import { useRouter } from 'next/navigation';
+import { loadAllClientData } from '@/lib/services';
 
 export function LoginForm() {
   const { dispatch } = useApp();
@@ -11,6 +12,15 @@ export function LoginForm() {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
   const [showKey, setShowKey] = useState(false);
+
+  async function loadData(clienteId: number) {
+    try {
+      const data = await loadAllClientData(clienteId);
+      dispatch({ type: 'SET_ALL_DATA', payload: data });
+    } catch {
+      // Data load failure is non-fatal — app works with empty data
+    }
+  }
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
@@ -22,8 +32,9 @@ export function LoginForm() {
       const res = await fetch('/api/cliente', {
         headers: { 'X-API-Key': apiKey.trim() },
       });
+
       if (!res.ok) {
-        // Intentar mock mode
+        // Demo mode
         const mockCliente = {
           id: 1,
           phone_number_id: '958444014023857',
@@ -45,6 +56,10 @@ export function LoginForm() {
       const data = await res.json();
       dispatch({ type: 'SET_CLIENTE', payload: data });
       dispatch({ type: 'SET_DEMO_MODE', payload: false });
+
+      // Load templates, prospects, messages, form data from Supabase
+      if (data.id) await loadData(data.id);
+
       router.push('/');
     } catch {
       // Fallback mock

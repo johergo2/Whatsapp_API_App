@@ -2,6 +2,8 @@
 
 import { useApp } from '@/lib/store';
 import { Sidebar } from '@/components/ui/Sidebar';
+import { useEffect, useRef } from 'react';
+import { fetchMessages } from '@/lib/services';
 
 function formatDate(dateStr: string) {
   if (!dateStr) return '-';
@@ -14,7 +16,17 @@ function formatDate(dateStr: string) {
 }
 
 export default function HistoryPage() {
-  const { state } = useApp();
+  const { state, dispatch } = useApp();
+  const loaded = useRef(false);
+
+  useEffect(() => {
+    if (!state.demoMode && state.cliente?.id && !loaded.current) {
+      loaded.current = true;
+      fetchMessages(state.cliente.id)
+        .then((msgs) => dispatch({ type: 'SET_MESSAGES', payload: msgs }))
+        .catch(() => {});
+    }
+  }, [state.cliente?.id, state.demoMode, dispatch]);
 
   return (
     <div id="app">

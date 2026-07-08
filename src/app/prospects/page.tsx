@@ -5,6 +5,7 @@ import { Sidebar } from '@/components/ui/Sidebar';
 import React, { useState } from 'react';
 import { Card } from '@/components/ui/Card';
 import { Modal } from '@/components/ui/Modal';
+import { addProspect, updateProspect, deleteProspectFromDb } from '@/lib/services';
 import type { Plantilla, Prospecto } from '@/types';
 
 const MAX_STATUS_LEN = 40;
@@ -61,7 +62,7 @@ function openNew() {
     setModalOpen(true);
   }
 
-  function saveProspect() {
+  async function saveProspect() {
     if (!editName || !editPhone) return;
     const data: Prospecto = {
       nombre: editName,
@@ -71,19 +72,45 @@ function openNew() {
       captions: [],
       estado: '',
     };
+
     if (editIdx >= 0) {
       const old = state.prospects[editIdx];
       data.estado = old.estado || '';
       data.captions = old.captions || [];
+
+      if (old.id && !state.demoMode && state.cliente?.id) {
+        try {
+          await updateProspect({ ...data, id: old.id });
+        } catch (e) {
+          console.error('Error updating prospect in Supabase:', e);
+        }
+      }
+
       dispatch({ type: 'UPDATE_PROSPECT', payload: { index: editIdx, data } });
     } else {
-      dispatch({ type: 'ADD_PROSPECT', payload: data });
+      let created: Prospecto = { ...data };
+      if (!state.demoMode && state.cliente?.id) {
+        try {
+          created = await addProspect(state.cliente.id, data);
+        } catch (e) {
+          console.error('Error adding prospect to Supabase:', e);
+        }
+      }
+      dispatch({ type: 'ADD_PROSPECT', payload: created });
     }
     setModalOpen(false);
   }
 
-  function deleteProspect(i: number) {
+  async function deleteProspect(i: number) {
     if (!confirm('¿Eliminar este prospecto?')) return;
+    const p = state.prospects[i];
+    if (p.id && !state.demoMode) {
+      try {
+        await deleteProspectFromDb(p.id);
+      } catch (e) {
+        console.error('Error deleting prospect from Supabase:', e);
+      }
+    }
     dispatch({ type: 'DELETE_PROSPECT', payload: i });
   }
 

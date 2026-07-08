@@ -15,8 +15,16 @@ interface AppState {
   demoMode: boolean;
 }
 
+interface AllData {
+  templates: Plantilla[];
+  prospects: Prospecto[];
+  messages: Mensaje[];
+  sendFormData: Record<string, SendFormValues>;
+}
+
 type Action =
   | { type: 'SET_CLIENTE'; payload: Cliente | null }
+  | { type: 'SET_ALL_DATA'; payload: AllData }
   | { type: 'SET_TEMPLATES'; payload: Plantilla[] }
   | { type: 'ADD_TEMPLATE'; payload: Plantilla }
   | { type: 'UPDATE_TEMPLATE'; payload: Plantilla }
@@ -49,6 +57,14 @@ function appReducer(state: AppState, action: Action): AppState {
   switch (action.type) {
     case 'SET_CLIENTE':
       return { ...state, cliente: action.payload };
+    case 'SET_ALL_DATA':
+      return {
+        ...state,
+        templates: action.payload.templates,
+        prospects: action.payload.prospects,
+        messages: action.payload.messages,
+        sendFormData: action.payload.sendFormData,
+      };
     case 'SET_TEMPLATES':
       return { ...state, templates: action.payload };
     case 'ADD_TEMPLATE':

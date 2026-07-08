@@ -20,6 +20,7 @@ export interface Variable {
 
 export interface Plantilla {
   id: string;
+  cliente_id?: number;
   name: string;
   template_name: string;
   language_code: string;
@@ -32,6 +33,7 @@ export interface Plantilla {
 
 export interface Prospecto {
   id?: number;
+  cliente_id?: number;
   nombre: string;
   telefono: string;
   header_img: string;
@@ -42,7 +44,9 @@ export interface Prospecto {
 
 export interface Mensaje {
   id?: number;
+  cliente_id?: number;
   to: string;
+  to_number?: string;
   tipo: string;
   mensaje: string;
   estado: string;
