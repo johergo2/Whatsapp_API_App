@@ -1,12 +1,16 @@
 'use client';
 
-import { supabase } from './supabase';
+import { getSupabase } from './supabase';
 import type { Plantilla, Prospecto, Mensaje, SendFormValues } from '@/types';
+
+function db() {
+  return getSupabase() as any;
+}
 
 // ─── Templates ──────────────────────────────────────────────
 
 export async function fetchTemplates(clienteId: number): Promise<Plantilla[]> {
-  const { data, error } = await supabase
+  const { data, error } = await db()
     .from('plantillas')
     .select('*')
     .eq('cliente_id', clienteId)
@@ -30,7 +34,7 @@ export async function addTemplate(
   clienteId: number,
   tpl: Omit<Plantilla, 'id'>
 ): Promise<Plantilla> {
-  const { data, error } = await supabase
+  const { data, error } = await db()
     .from('plantillas')
     .insert({
       cliente_id: clienteId,
@@ -47,21 +51,22 @@ export async function addTemplate(
     .single();
 
   if (error) throw error;
+  const row = data;
   return {
-    id: data.id,
-    name: data.name,
-    template_name: data.template_name,
-    language_code: data.language_code,
-    num_textos: data.num_textos,
-    has_header: data.has_header,
-    num_footer: data.num_footer,
-    footer_captions: data.footer_captions || [],
-    message_example: data.message_example || '',
+    id: row.id,
+    name: row.name,
+    template_name: row.template_name,
+    language_code: row.language_code,
+    num_textos: row.num_textos,
+    has_header: row.has_header,
+    num_footer: row.num_footer,
+    footer_captions: row.footer_captions || [],
+    message_example: row.message_example || '',
   };
 }
 
 export async function updateTemplate(tpl: Plantilla): Promise<void> {
-  const { error } = await supabase
+  const { error } = await db()
     .from('plantillas')
     .update({
       name: tpl.name,
@@ -79,7 +84,7 @@ export async function updateTemplate(tpl: Plantilla): Promise<void> {
 }
 
 export async function deleteTemplate(id: string): Promise<void> {
-  const { error } = await supabase
+  const { error } = await db()
     .from('plantillas')
     .delete()
     .eq('id', id);
@@ -90,7 +95,7 @@ export async function deleteTemplate(id: string): Promise<void> {
 // ─── Prospects ──────────────────────────────────────────────
 
 export async function fetchProspects(clienteId: number): Promise<Prospecto[]> {
-  const { data, error } = await supabase
+  const { data, error } = await db()
     .from('prospectos')
     .select('*')
     .eq('cliente_id', clienteId)
@@ -112,7 +117,7 @@ export async function addProspect(
   clienteId: number,
   p: Omit<Prospecto, 'id'>
 ): Promise<Prospecto> {
-  const { data, error } = await supabase
+  const { data, error } = await db()
     .from('prospectos')
     .insert({
       cliente_id: clienteId,
@@ -127,21 +132,22 @@ export async function addProspect(
     .single();
 
   if (error) throw error;
+  const row = data;
   return {
-    id: data.id,
-    nombre: data.nombre,
-    telefono: data.telefono,
-    header_img: data.header_img || '',
-    footer_imgs: data.footer_imgs || [],
-    captions: data.captions || [],
-    estado: data.estado || '',
+    id: row.id,
+    nombre: row.nombre,
+    telefono: row.telefono,
+    header_img: row.header_img || '',
+    footer_imgs: row.footer_imgs || [],
+    captions: row.captions || [],
+    estado: row.estado || '',
   };
 }
 
 export async function updateProspect(
   p: Prospecto & { id: number }
 ): Promise<void> {
-  const { error } = await supabase
+  const { error } = await db()
     .from('prospectos')
     .update({
       nombre: p.nombre,
@@ -157,7 +163,7 @@ export async function updateProspect(
 }
 
 export async function deleteProspectFromDb(id: number): Promise<void> {
-  const { error } = await supabase
+  const { error } = await db()
     .from('prospectos')
     .delete()
     .eq('id', id);
@@ -168,7 +174,7 @@ export async function deleteProspectFromDb(id: number): Promise<void> {
 // ─── Messages ───────────────────────────────────────────────
 
 export async function fetchMessages(clienteId: number): Promise<Mensaje[]> {
-  const { data, error } = await supabase
+  const { data, error } = await db()
     .from('mensajes')
     .select('*')
     .eq('cliente_id', clienteId)
@@ -200,7 +206,7 @@ export async function addMessage(
     meta_msg_id?: string;
   }
 ): Promise<void> {
-  const { error } = await supabase
+  const { error } = await db()
     .from('mensajes')
     .insert({
       cliente_id: clienteId,
@@ -223,7 +229,7 @@ export async function fetchSendFormData(
   clienteId: number,
   plantillaId?: string
 ): Promise<Record<string, SendFormValues>> {
-  const q = supabase
+  const q = db()
     .from('send_form_data')
     .select('*')
     .eq('cliente_id', clienteId);
@@ -247,7 +253,7 @@ export async function upsertSendFormData(
   plantillaId: string,
   values: SendFormValues
 ): Promise<void> {
-  const { error } = await supabase
+  const { error } = await db()
     .from('send_form_data')
     .upsert(
       {
