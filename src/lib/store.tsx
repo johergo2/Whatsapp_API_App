@@ -19,7 +19,7 @@ interface AllData {
   templates: Plantilla[];
   prospects: Prospecto[];
   messages: Mensaje[];
-  sendFormData: Record<string, SendFormValues>;
+  sendFormData?: Record<string, SendFormValues>;
 }
 
 type Action =
@@ -63,7 +63,7 @@ function appReducer(state: AppState, action: Action): AppState {
         templates: action.payload.templates,
         prospects: action.payload.prospects,
         messages: action.payload.messages,
-        sendFormData: action.payload.sendFormData,
+        sendFormData: action.payload.sendFormData || state.sendFormData,
       };
     case 'SET_TEMPLATES':
       return { ...state, templates: action.payload };

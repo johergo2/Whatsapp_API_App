@@ -37,6 +37,8 @@ export function LoginForm() {
         // Demo mode
         const mockCliente = {
           id: 1,
+          nit: '16780919',
+          nombre_comercial: 'Productos & Asesorias',
           phone_number_id: '958444014023857',
           display_number: '+573052968034',
           api_key: apiKey.trim(),
@@ -57,7 +59,7 @@ export function LoginForm() {
       dispatch({ type: 'SET_CLIENTE', payload: data });
       dispatch({ type: 'SET_DEMO_MODE', payload: false });
 
-      // Load templates, prospects, messages, form data from Supabase
+      // Load templates, prospects, messages from Supabase
       if (data.id) await loadData(data.id);
 
       router.push('/');
@@ -65,6 +67,8 @@ export function LoginForm() {
       // Fallback mock
       const mockCliente = {
         id: 1,
+        nit: '16780919',
+        nombre_comercial: 'Productos & Asesorias',
         phone_number_id: '958444014023857',
         display_number: '+573052968034',
         api_key: apiKey.trim(),

@@ -56,27 +56,29 @@ export default function HistoryPage() {
                 <thead>
                   <tr>
                     <th>ID</th>
-                    <th>Destino</th>
-                    <th>Tipo</th>
+                    <th>De</th>
+                    <th>Para</th>
+                    <th>Dirección</th>
                     <th>Mensaje</th>
                     <th>Estado</th>
-                    <th>Error</th>
+                    <th>Wamid</th>
                     <th>Fecha</th>
                   </tr>
                 </thead>
                 <tbody>
                   {state.messages.length === 0 ? (
-                    <tr><td colSpan={7} className="empty-state">No hay registros de mensajes</td></tr>
+                    <tr><td colSpan={8} className="empty-state">No hay registros de mensajes</td></tr>
                   ) : (
                     state.messages.map((msg, i) => (
                       <tr key={i}>
                         <td>{msg.id || '-'}</td>
-                        <td>{msg.to || '-'}</td>
-                        <td>{msg.tipo || '-'}</td>
+                        <td>{msg.from_number || '-'}</td>
+                        <td>{msg.to_number || '-'}</td>
+                        <td>{msg.direction || '-'}</td>
                         <td>{msg.mensaje || '-'}</td>
                         <td>{msg.estado || '-'}</td>
-                        <td>{msg.error || '-'}</td>
-                        <td>{msg.fecha ? formatDate(msg.fecha) : '-'}</td>
+                        <td style={{ fontSize: 11 }}>{msg.wamid ? msg.wamid.slice(0, 20) + '…' : '-'}</td>
+                        <td>{msg.fecha_creacion ? formatDate(msg.fecha_creacion) : '-'}</td>
                       </tr>
                     ))
                   )}
