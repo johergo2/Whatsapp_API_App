@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
+import { getServerSupabase } from '@/lib/supabase';
 
 export async function POST(req: NextRequest) {
   try {
@@ -13,11 +14,7 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ detail: 'cliente_id, to y template_name son obligatorios' }, { status: 400 });
     }
 
-    const { createClient } = await import('@supabase/supabase-js');
-    const supabase = createClient(
-      process.env.NEXT_PUBLIC_SUPABASE_URL || '',
-      process.env.SUPABASE_SERVICE_ROLE_KEY || process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY || ''
-    );
+    const supabase = getServerSupabase();
 
     // 1. Get client phone_number_id
     const { data: cliente, error: cliErr } = await supabase

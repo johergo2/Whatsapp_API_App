@@ -1,11 +1,11 @@
 import { NextRequest, NextResponse } from 'next/server';
+import { getServerSupabase } from '@/lib/supabase';
 
 export async function POST(req: NextRequest) {
   try {
     const payload = await req.json();
     const event = payload.event;
 
-    // Only process agent replies
     if (event !== 'message_created' || payload.message_type !== 'outgoing') {
       return NextResponse.json({ status: 'ignored' });
     }
@@ -19,11 +19,7 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ status: 'invalid_data' });
     }
 
-    const { createClient } = await import('@supabase/supabase-js');
-    const supabase = createClient(
-      process.env.NEXT_PUBLIC_SUPABASE_URL || '',
-      process.env.SUPABASE_SERVICE_ROLE_KEY || process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY || ''
-    );
+    const supabase = getServerSupabase();
 
     // Check for duplicates
     const { data: existing } = await supabase

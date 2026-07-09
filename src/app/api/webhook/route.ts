@@ -1,15 +1,12 @@
 import { NextRequest, NextResponse } from 'next/server';
+import { getServerSupabase } from '@/lib/supabase';
 
 function getVerifyToken(): string {
   return process.env.VERIFY_TOKEN || 'johergo21970090516780919';
 }
 
 async function getDb() {
-  const { createClient } = await import('@supabase/supabase-js');
-  return createClient(
-    process.env.NEXT_PUBLIC_SUPABASE_URL || '',
-    process.env.SUPABASE_SERVICE_ROLE_KEY || process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY || ''
-  );
+  return getServerSupabase();
 }
 
 // GET: Meta webhook verification

@@ -1,14 +1,11 @@
 import { NextRequest, NextResponse } from 'next/server';
+import { getServerSupabase } from '@/lib/supabase';
 
 export async function POST(req: NextRequest) {
   try {
     const data = await req.json();
 
-    const { createClient } = await import('@supabase/supabase-js');
-    const supabase = createClient(
-      process.env.NEXT_PUBLIC_SUPABASE_URL || '',
-      process.env.SUPABASE_SERVICE_ROLE_KEY || process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY || ''
-    );
+    const supabase = getServerSupabase();
 
     await supabase.from('mensajes_whatsapp').insert({
       cliente_id: data.cliente_id,
