@@ -64,6 +64,11 @@ body {
 .login-header .subtitle { color: var(--text-secondary); font-size: 14px; }
 .login-form { display: flex; flex-direction: column; gap: 20px; }
 .login-error { color: var(--danger); font-size: 13px; text-align: center; min-height: 20px; }
+.input-wrapper { width: 100%; }
+.login-form .form-group input {
+  padding: 14px 18px;
+  font-size: 16px;
+}
 
 /* Topbar inside main-content */
 .topbar {
