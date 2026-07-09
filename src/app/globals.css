@@ -55,7 +55,7 @@ body {
   border-radius: 16px;
   padding: 40px;
   width: 100%;
-  max-width: 420px;
+  max-width: 500px;
   box-shadow: var(--shadow-lg);
 }
 .login-header { text-align: center; margin-bottom: 32px; }
@@ -234,7 +234,7 @@ body {
   border: 1px solid var(--border);
   border-radius: 8px;
   font-size: 14px;
-  font-family: inherit;
+  font-family: 'Courier New', monospace;
   background: var(--bg-card);
   color: var(--text);
   transition: border-color 0.2s;
