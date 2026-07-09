@@ -34,24 +34,8 @@ export function LoginForm() {
       });
 
       if (!res.ok) {
-        // Demo mode
-        const mockCliente = {
-          id: 1,
-          nit: '16780919',
-          nombre_comercial: 'Productos & Asesorias',
-          phone_number_id: '958444014023857',
-          display_number: '+573052968034',
-          api_key: apiKey.trim(),
-          estado: 'activo',
-          plan: 'Plan Básico 200',
-          requests_max: 200,
-          requests_usadas: 47,
-          periodo_inicio: '2026-01-01',
-          periodo_fin: '2026-12-31',
-        };
-        dispatch({ type: 'SET_CLIENTE', payload: mockCliente });
-        dispatch({ type: 'SET_DEMO_MODE', payload: true });
-        router.push('/');
+        setError('API Key inválida');
+        setLoading(false);
         return;
       }
 
@@ -59,29 +43,11 @@ export function LoginForm() {
       dispatch({ type: 'SET_CLIENTE', payload: data });
       dispatch({ type: 'SET_DEMO_MODE', payload: false });
 
-      // Load templates, prospects, messages from Supabase
       if (data.id) await loadData(data.id);
 
       router.push('/');
     } catch {
-      // Fallback mock
-      const mockCliente = {
-        id: 1,
-        nit: '16780919',
-        nombre_comercial: 'Productos & Asesorias',
-        phone_number_id: '958444014023857',
-        display_number: '+573052968034',
-        api_key: apiKey.trim(),
-        estado: 'activo',
-        plan: 'Plan Básico 200',
-        requests_max: 200,
-        requests_usadas: 47,
-        periodo_inicio: '2026-01-01',
-        periodo_fin: '2026-12-31',
-      };
-      dispatch({ type: 'SET_CLIENTE', payload: mockCliente });
-      dispatch({ type: 'SET_DEMO_MODE', payload: true });
-      router.push('/');
+      setError('Error de conexión con el servidor');
     } finally {
       setLoading(false);
     }
@@ -141,9 +107,6 @@ export function LoginForm() {
           </button>
         </form>
         {error && <p className="login-error">{error}</p>}
-        <p className="login-hint" style={{ fontSize: 12, color: '#667781', marginTop: 12, textAlign: 'center' }}>
-          Si la API no responde, ingresa con cualquier clave para usar <strong>Modo Demo</strong>
-        </p>
       </div>
     </div>
   );
