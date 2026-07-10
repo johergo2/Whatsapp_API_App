@@ -154,7 +154,7 @@ CREATE TRIGGER trg_set_fecha_actualizacion_varwhat
 -- Tablas auxiliares para UI (plantillas, prospectos, send_form_data)
 -- ================================================================
 CREATE TABLE public.plantillas (
-    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    id SERIAL PRIMARY KEY,
     cliente_id INTEGER REFERENCES clientes_whatsapp(id),
     name TEXT NOT NULL,
     template_name TEXT NOT NULL,
@@ -164,6 +164,8 @@ CREATE TABLE public.plantillas (
     num_footer INTEGER DEFAULT 0,
     footer_captions TEXT[],
     message_example TEXT,
+    descripcion TEXT,
+    nomb_mio TEXT DEFAULT '',
     created_at TIMESTAMPTZ DEFAULT NOW()
 );
 

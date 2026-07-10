@@ -1,6 +1,6 @@
 'use client';
 
-import { createContext, useContext, useReducer, ReactNode, Dispatch } from 'react';
+import { createContext, useContext, useReducer, ReactNode, Dispatch, useEffect } from 'react';
 import type { Cliente, Plantilla, Prospecto, Mensaje, SendFormValues } from '@/types';
 
 interface AppState {
@@ -11,15 +11,17 @@ interface AppState {
   sendFormData: Record<string, SendFormValues>;
   currentSection: string;
   sending: boolean;
-  prosTemplateId: string | null;
+  prosTemplateId: number | null;
   demoMode: boolean;
+  sessionExpired: boolean;
+  sessionLoading: boolean;
 }
 
 interface AllData {
   templates: Plantilla[];
   prospects: Prospecto[];
   messages: Mensaje[];
-  sendFormData?: Record<string, SendFormValues>;
+  sendFormData: Record<string, SendFormValues>;
 }
 
 type Action =
@@ -28,18 +30,21 @@ type Action =
   | { type: 'SET_TEMPLATES'; payload: Plantilla[] }
   | { type: 'ADD_TEMPLATE'; payload: Plantilla }
   | { type: 'UPDATE_TEMPLATE'; payload: Plantilla }
-  | { type: 'DELETE_TEMPLATE'; payload: string }
+  | { type: 'DELETE_TEMPLATE'; payload: number }
   | { type: 'SET_PROSPECTS'; payload: Prospecto[] }
   | { type: 'ADD_PROSPECT'; payload: Prospecto }
   | { type: 'UPDATE_PROSPECT'; payload: { index: number; data: Prospecto } }
   | { type: 'DELETE_PROSPECT'; payload: number }
   | { type: 'UPDATE_PROSPECT_FIELD'; payload: { index: number; field: string; value: string } }
   | { type: 'SET_MESSAGES'; payload: Mensaje[] }
-  | { type: 'SET_SEND_FORM_DATA'; payload: { templateId: string; values: SendFormValues } }
+  | { type: 'SET_SEND_FORM_DATA'; payload: { templateId: number; values: SendFormValues } }
   | { type: 'SET_SECTION'; payload: string }
   | { type: 'SET_SENDING'; payload: boolean }
-  | { type: 'SET_PROS_TEMPLATE_ID'; payload: string | null }
-  | { type: 'SET_DEMO_MODE'; payload: boolean };
+  | { type: 'SET_PROS_TEMPLATE_ID'; payload: number | null }
+  | { type: 'SET_DEMO_MODE'; payload: boolean }
+  | { type: 'LOGOUT' }
+  | { type: 'SET_SESSION_EXPIRED'; payload: boolean }
+  | { type: 'SET_SESSION_LOADING'; payload: boolean };
 
 const initialState: AppState = {
   cliente: null,
@@ -51,6 +56,8 @@ const initialState: AppState = {
   sending: false,
   prosTemplateId: null,
   demoMode: false,
+  sessionExpired: false,
+  sessionLoading: true,
 };
 
 function appReducer(state: AppState, action: Action): AppState {
@@ -63,7 +70,7 @@ function appReducer(state: AppState, action: Action): AppState {
         templates: action.payload.templates,
         prospects: action.payload.prospects,
         messages: action.payload.messages,
-        sendFormData: action.payload.sendFormData || state.sendFormData,
+        sendFormData: action.payload.sendFormData,
       };
     case 'SET_TEMPLATES':
       return { ...state, templates: action.payload };
@@ -116,7 +123,7 @@ function appReducer(state: AppState, action: Action): AppState {
         ...state,
         sendFormData: {
           ...state.sendFormData,
-          [action.payload.templateId]: action.payload.values,
+          [String(action.payload.templateId)]: action.payload.values,
         },
       };
     case 'SET_SECTION':
@@ -127,6 +134,12 @@ function appReducer(state: AppState, action: Action): AppState {
       return { ...state, prosTemplateId: action.payload };
     case 'SET_DEMO_MODE':
       return { ...state, demoMode: action.payload };
+    case 'LOGOUT':
+      return { ...initialState, sessionLoading: false };
+    case 'SET_SESSION_EXPIRED':
+      return { ...state, sessionExpired: action.payload };
+    case 'SET_SESSION_LOADING':
+      return { ...state, sessionLoading: action.payload };
     default:
       return state;
   }
@@ -139,6 +152,45 @@ const AppContext = createContext<{
 
 export function AppProvider({ children }: { children: ReactNode }) {
   const [state, dispatch] = useReducer(appReducer, initialState);
+
+  useEffect(() => {
+    const key = typeof window !== 'undefined' ? localStorage.getItem('mercurio_api_key') : null;
+    if (!key) {
+      dispatch({ type: 'SET_SESSION_LOADING', payload: false });
+      return;
+    }
+
+    fetch('/api/cliente', { headers: { 'X-API-Key': key } })
+      .then(async (res) => {
+        if (!res.ok) throw new Error('invalid');
+        const cliente = await res.json();
+        dispatch({ type: 'SET_CLIENTE', payload: cliente });
+        dispatch({ type: 'SET_DEMO_MODE', payload: false });
+
+        const [templates, prospects, messages, sendFormData] = await Promise.all([
+          fetch('/api/plantillas', { headers: { 'X-API-Key': key } }).then(r => r.json()).catch(() => []),
+          fetch('/api/prospectos', { headers: { 'X-API-Key': key } }).then(r => r.json()).catch(() => []),
+          fetch('/api/mensajes', { headers: { 'X-API-Key': key } }).then(r => r.json()).catch(() => []),
+          fetch('/api/send-form-data', { headers: { 'X-API-Key': key } }).then(r => r.json()).then(rows => {
+            const map: Record<string, SendFormValues> = {};
+            for (const row of rows as Array<{ plantilla_id: number; values_json: Record<string, string> }>) {
+              map[String(row.plantilla_id)] = row.values_json as SendFormValues;
+            }
+            return map;
+          }).catch(() => ({})),
+        ]);
+
+        dispatch({ type: 'SET_ALL_DATA', payload: { templates, prospects, messages, sendFormData } });
+      })
+      .catch(() => {
+        localStorage.removeItem('mercurio_api_key');
+        dispatch({ type: 'SET_SESSION_EXPIRED', payload: true });
+      })
+      .finally(() => {
+        dispatch({ type: 'SET_SESSION_LOADING', payload: false });
+      });
+  }, []);
+
   return (
     <AppContext.Provider value={{ state, dispatch }}>
       {children}

@@ -1,53 +1,70 @@
 === MERCURIO SEND — REGISTRO DE CAMBIOS ===
 
-Fecha: 5/07/2026
+Fecha: 9/07/2026
 
 ============================================================
-CREACIÓN DE DOCUMENTACIÓN TÉCNICA
+MIGRACIÓN COMPLETA A NEXT.JS 14 + API ROUTES
 ============================================================
 
-Se crearon los siguientes archivos en docs/:
-
-- PROJECT_CONTEXT.md     : Descripción general, stack, estructura
-- API_SPEC.md            : Endpoints, payloads, mock data
-- ARCHITECTURE_MVP.md    : Arquitectura actual y destino
-- DATABASE_SCHEMA.md     : Esquema PostgreSQL (6 tablas)
-- SMART_CONTRACT_SPEC.md : No aplica (proyecto tradicional)
-- TODO_MVP.md            : Estado de tareas por fase
-- Cambios.txt            : Registro de cambios
-
-============================================================
-CONFIGURACIÓN DEL REPOSITORIO
-============================================================
-
-- Repositorio Git inicializado en C:\Desarrollos\WhatsApp_API_App
-- Remote configurado: https://github.com/johergo2/Whatsapp_API_App.git
-- Branch: main
-- Commit inicial realizado y subido a GitHub
-- Archivos incluidos: index.html, css/style.css, js/api.js,
-  js/app.js, docs/*.md, y demás archivos del proyecto
+- Prototipo vanilla HTML/CSS/JS movido a legacy/
+- App migrada a Next.js 14 con TypeScript
+- API Routes implementadas para toda la lógica:
+  * GET /api/cliente — validación API Key con SHA256
+  * GET /api/variables — variables de configuración
+  * GET|POST|PUT|DELETE /api/plantillas — CRUD plantillas
+  * GET|POST|PUT|DELETE /api/prospectos — CRUD prospectos
+  * GET /api/mensajes — historial de mensajes
+  * POST /api/send-message — envío de templates
+  * POST /api/send-media — envío de imágenes/video
+  * GET|POST /api/webhook — webhook Meta
+  * POST /api/outbound — registro manual de salida
+  * POST /api/chatwoot/webhook — webhook Chatwoot
 
 ============================================================
-CREACIÓN DE BASE DE DATOS (SUPABASE)
+ARQUITECTURA DE COMUNICACIÓN
 ============================================================
 
-- Proyecto creado en Supabase (plan Free)
-- Región: us-east-1 / southamerica-east-1
-- Tablas creadas via SQL Editor:
-  * clientes
-  * variables
-  * plantillas
-  * prospectos
-  * mensajes
-  * send_form_data
-- Índices creados: idx_prospectos_cliente, idx_prospectos_estado,
-  idx_plantillas_cliente, idx_mensajes_cliente, idx_mensajes_fecha
-- RLS no activado (se configurará después con autenticación)
+Cambio fundamental: toda comunicación ahora pasa por API Routes.
+El navegador NO habla directo a Supabase SDK.
+
+Anterior:
+  Navegador → Supabase SDK (directo a PostgreSQL via REST)
+
+Actual:
+  Navegador → API Route (Vercel/localhost) → Supabase
 
 ============================================================
-PENDIENTE
+BASE DE DATOS
 ============================================================
 
-- Desplegar en Vercel
-- Reemplazar localStorage por Supabase en api.js
-- Probar flujo completo con datos reales
+- Migración completa al esquema original de FastAPI
+- Tablas: clientes_whatsapp, contactos_whatsapp, mensajes_whatsapp,
+  estado_mensajes_whatsapp, variables_whatsapp, plantillas, prospectos
+- send_form_data eliminada (no estaba en esquema original)
+- Seed data para cliente #1 Productos & Asesorias
+
+============================================================
+ELIMINACIÓN DE MODO DEMO
+============================================================
+
+- Eliminado el modo demo que permitía ingresar con cualquier API Key
+- Si la API Key no es válida, muestra error "API Key inválida"
+- Sin banner de demo en la UI
+
+============================================================
+AMBIENTES
+============================================================
+
+- Desarrollo local: http://localhost:3002 (npm run dev)
+- Producción: https://whatsapp-api-app-silk.vercel.app
+- Ambos comparten la misma base de datos Supabase
+
+============================================================
+DOCUMENTACIÓN
+============================================================
+
+- PROJECT_CONTEXT.md actualizado con stack y ambientes
+- ARCHITECTURE_MVP.md actualizado con diagrama y flujos
+- API_SPEC.md actualizado con todos los endpoints reales
+- DATABASE_SCHEMA.md actualizado con esquema actual
+- TODO_MVP.md pendiente de actualizar

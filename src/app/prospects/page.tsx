@@ -5,18 +5,16 @@ import { Sidebar } from '@/components/ui/Sidebar';
 import React, { useState } from 'react';
 import { Card } from '@/components/ui/Card';
 import { Modal } from '@/components/ui/Modal';
-import { addProspect, updateProspect, deleteProspectFromDb } from '@/lib/services';
+import { addProspect, updateProspect, deleteProspectFromDb, replaceAllProspects } from '@/lib/services';
 import type { Plantilla, Prospecto } from '@/types';
-
-const MAX_STATUS_LEN = 40;
 
 function renderStatusCell(estado: string) {
   if (!estado) return '<span class="status-badge pending">Pendiente</span>';
-  const display = estado.length > MAX_STATUS_LEN ? estado.slice(0, MAX_STATUS_LEN) + '…' : estado;
-  const full = estado.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
-  if (estado.includes('✅')) return `<span class="status-badge success" title="${full}">${display}</span>`;
-  if (estado.includes('❌') || estado.includes('Error')) return `<span class="status-badge error" title="${full}">${display}</span>`;
-  return `<span class="status-badge pending" title="${full}">${display}</span>`;
+  const esc = (s: string) => s.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
+  const text = esc(estado);
+  if (estado.includes('✅')) return `<span class="status-badge success" style="user-select:all">${text}</span>`;
+  if (estado.includes('❌') || estado.includes('Error')) return `<span class="status-badge error" style="user-select:all">${text}</span>`;
+  return `<span class="status-badge pending" style="user-select:all">${text}</span>`;
 }
 
 export default function ProspectsPage() {
@@ -36,12 +34,13 @@ export default function ProspectsPage() {
   const [progressPct, setProgressPct] = useState(0);
   const [progressTotal, setProgressTotal] = useState(0);
   const [logs, setLogs] = useState<string[]>([]);
+  const [onlyPending, setOnlyPending] = useState(true);
 
   const tpl = state.prosTemplateId
     ? state.templates.find((t) => t.id === state.prosTemplateId) || null
     : null;
 
-  const defaults = (tpl && state.sendFormData[tpl.id]) || {};
+  const defaults = (tpl && state.sendFormData[String(tpl.id)]) || {};
 
 function openNew() {
     setEditIdx(-1);
@@ -78,22 +77,22 @@ function openNew() {
       data.estado = old.estado || '';
       data.captions = old.captions || [];
 
-      if (old.id && !state.demoMode && state.cliente?.id) {
+      if (old.id && !state.demoMode) {
         try {
           await updateProspect({ ...data, id: old.id });
         } catch (e) {
-          console.error('Error updating prospect in Supabase:', e);
+          console.error('Error updating prospect:', e);
         }
       }
 
       dispatch({ type: 'UPDATE_PROSPECT', payload: { index: editIdx, data } });
     } else {
       let created: Prospecto = { ...data };
-      if (!state.demoMode && state.cliente?.id) {
+      if (!state.demoMode) {
         try {
-          created = await addProspect(state.cliente.id, data);
+          created = await addProspect(data);
         } catch (e) {
-          console.error('Error adding prospect to Supabase:', e);
+          console.error('Error adding prospect:', e);
         }
       }
       dispatch({ type: 'ADD_PROSPECT', payload: created });
@@ -143,25 +142,34 @@ function openNew() {
     const file = e.target.files?.[0];
     if (!file) return;
     const reader = new FileReader();
-    reader.onload = (ev) => {
+    reader.onload = async (ev) => {
       const text = ev.target?.result as string;
       const lines = text.split('\n').map((l) => l.trim()).filter(Boolean);
       if (lines.length === 0) return;
       const first = lines[0].toLowerCase();
       const hasHeader = first.includes('nombre') || first.includes('name') || first.includes('nomb');
       const dataLines = hasHeader ? lines.slice(1) : lines;
-      let added = 0;
+      const prospects: Omit<Prospecto, 'id'>[] = [];
       dataLines.forEach((line) => {
         const parts = line.split(',').map((s) => s.trim().replace(/^"|"$/g, ''));
         if (parts.length >= 2 && parts[0] && parts[1]) {
-          dispatch({
-            type: 'ADD_PROSPECT',
-            payload: { nombre: parts[0], telefono: parts[1], header_img: '', footer_imgs: [], captions: [], estado: '' },
-          });
-          added++;
+          prospects.push({ nombre: parts[0], telefono: parts[1], header_img: '', footer_imgs: [], captions: [], estado: '' });
         }
       });
-      alert(`${added} prospectos importados`);
+
+      if (prospects.length === 0) {
+        alert('No se encontraron prospectos válidos en el CSV');
+        return;
+      }
+
+      try {
+        const created = await replaceAllProspects(prospects);
+        dispatch({ type: 'SET_PROSPECTS', payload: created });
+        alert(`${created.length} prospectos importados y guardados en BD`);
+      } catch (e) {
+        alert('Error al guardar prospectos en BD');
+        console.error(e);
+      }
     };
     reader.readAsText(file, 'UTF-8');
   }
@@ -170,11 +178,11 @@ function openNew() {
 
   async function startSend() {
     if (sending || !tpl) return;
-    if (!state.sendFormData[tpl.id]) {
+    if (!state.sendFormData[String(tpl.id)]) {
       alert('Configure el mensaje en "Enviar mensajes" primero');
       return;
     }
-    const saved = state.sendFormData[tpl.id];
+    const saved = state.sendFormData[String(tpl.id)];
 
     // Validate text values
     for (let i = 1; i <= tpl.num_textos; i++) {
@@ -185,7 +193,6 @@ function openNew() {
       }
     }
 
-    const onlyPending = true;
     let targets = onlyPending ? prospectsToSend : state.prospects;
     if (targets.length === 0) {
       alert('No hay prospectos pendientes');
@@ -241,7 +248,7 @@ function openNew() {
           template_name: tpl.template_name,
           language_code: tpl.language_code,
           nombre_clie: prospect.nombre,
-          nomb_mio: 'Jorge Hernán Gómez',
+          nomb_mio: tpl.nomb_mio || state.cliente?.nombre_comercial || '',
           header_image_url: headerUrl,
           ...textValues,
         };
@@ -324,7 +331,7 @@ function openNew() {
               <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><line x1="3" y1="12" x2="21" y2="12" /><line x1="3" y1="6" x2="21" y2="6" /><line x1="3" y1="18" x2="21" y2="18" /></svg>
             </button>
             <span style={{ fontSize: 14, color: '#667781' }}>Prospectos</span>
-            <button className="btn btn-outline btn-sm" style={{ marginLeft: 'auto' }} onClick={() => { window.location.href = '/login'; }}>Salir</button>
+            <button className="btn btn-outline btn-sm" style={{ marginLeft: 'auto' }} onClick={() => { localStorage.removeItem('mercurio_api_key'); dispatch({ type: 'LOGOUT' }); window.location.href = '/login'; }}>Salir</button>
           </div>
           <section className="section active">
             <div className="section-header">
@@ -337,8 +344,8 @@ function openNew() {
                 <div className="form-group" style={{ minWidth: 200, marginBottom: 0 }}>
                   <label style={{ fontSize: 12 }}>Plantilla para enviar</label>
                   <select
-                    value={state.prosTemplateId || ''}
-                    onChange={(e) => dispatch({ type: 'SET_PROS_TEMPLATE_ID', payload: e.target.value || null })}
+                    value={state.prosTemplateId ?? ''}
+                    onChange={(e) => dispatch({ type: 'SET_PROS_TEMPLATE_ID', payload: e.target.value ? Number(e.target.value) : null })}
                   >
                     <option value="">-- Seleccione --</option>
                     {state.templates.map((t) => (
@@ -458,7 +465,7 @@ function openNew() {
               </div>
 
               <div style={{ marginTop: 16, paddingTop: 16, borderTop: '1px solid var(--border)', display: 'flex', alignItems: 'center', gap: 16 }}>
-                <label><input type="checkbox" defaultChecked /> Solo pendientes</label>
+                <label><input type="checkbox" checked={onlyPending} onChange={(e) => setOnlyPending(e.target.checked)} /> Solo pendientes</label>
                 <div style={{ marginLeft: 'auto' }}>
                   <button className="btn btn-primary btn-lg" onClick={startSend} disabled={sending}>
                     <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">

@@ -46,6 +46,14 @@ export function Dashboard() {
             <span className="summary-value">{c.plan || 'Sin plan'}</span>
           </div>
           <div>
+            <span className="summary-label">WhatsApp</span>
+            <span className="summary-value">{c.display_number || '-'}</span>
+          </div>
+          <div>
+            <span className="summary-label">Phone ID</span>
+            <span className="summary-value" style={{ fontSize: 12 }}>{c.phone_number_id || '-'}</span>
+          </div>
+          <div>
             <span className="summary-label">Usados</span>
             <span className="summary-value">{usadas}</span>
           </div>

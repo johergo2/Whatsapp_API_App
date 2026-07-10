@@ -64,7 +64,12 @@ body {
 .login-header .subtitle { color: var(--text-secondary); font-size: 14px; }
 .login-form { display: flex; flex-direction: column; gap: 20px; }
 .login-error { color: var(--danger); font-size: 13px; text-align: center; min-height: 20px; }
-.input-wrapper { width: 100%; }
+.input-wrapper { width: 100%; display: flex; align-items: center; }
+.input-wrapper input { flex: 1; }
+.toggle-password {
+  background: none; border: none; cursor: pointer; padding: 8px;
+  display: flex; align-items: center; color: #667781;
+}
 .login-form .form-group input {
   padding: 14px 18px;
   font-size: 16px;
@@ -241,7 +246,7 @@ body {
   border: 1px solid var(--border);
   border-radius: 8px;
   font-size: 14px;
-  font-family: 'Courier New', monospace;
+  font-family: Arial, Helvetica, sans-serif;
   background: var(--bg-card);
   color: var(--text);
   transition: border-color 0.2s;
@@ -285,7 +290,7 @@ body {
 }
 .table tr:hover td { background: #FAFAFA; }
 .empty-state { text-align: center !important; color: var(--text-secondary); padding: 40px 16px !important; font-style: italic; }
-.status-cell { white-space: nowrap; min-width: 130px; }
+.status-cell { white-space: normal; min-width: 130px; word-break: break-all; user-select: text; max-width: 300px; }
 .actions-cell { white-space: nowrap; width: 80px; }
 .cell-input {
   width: 100%;

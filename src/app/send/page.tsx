@@ -9,20 +9,19 @@ import type { SendFormValues } from '@/types';
 
 export default function SendPage() {
   const { state, dispatch } = useApp();
-  const [selectedTplId, setSelectedTplId] = useState('');
+  const [selectedTplId, setSelectedTplId] = useState<number | null>(null);
   const [form, setForm] = useState<SendFormValues>({});
 
   const tpl = selectedTplId ? state.templates.find((t) => t.id === selectedTplId) : null;
-  const saved = selectedTplId ? state.sendFormData[selectedTplId] || {} : {};
+  const saved = selectedTplId ? state.sendFormData[String(selectedTplId)] || {} : {};
 
-  function onTemplateChange(id: string) {
-    // Save current
+  function onTemplateChange(id: number | null) {
     if (selectedTplId && tpl) {
       dispatch({ type: 'SET_SEND_FORM_DATA', payload: { templateId: selectedTplId, values: form } });
     }
     setSelectedTplId(id);
-    if (id && state.sendFormData[id]) {
-      setForm({ ...state.sendFormData[id] });
+    if (id && state.sendFormData[String(id)]) {
+      setForm({ ...state.sendFormData[String(id)] });
     } else {
       setForm({});
     }
@@ -35,12 +34,10 @@ export default function SendPage() {
   async function saveForm() {
     if (selectedTplId) {
       dispatch({ type: 'SET_SEND_FORM_DATA', payload: { templateId: selectedTplId, values: form } });
-      if (!state.demoMode && state.cliente?.id) {
-        try {
-          await upsertSendFormData(state.cliente.id, selectedTplId, form);
-        } catch (e) {
-          console.error('Error saving form data to Supabase:', e);
-        }
+      try {
+        await upsertSendFormData(selectedTplId, form);
+      } catch (e) {
+        console.error('Error saving form data:', e);
       }
     }
   }
@@ -62,7 +59,7 @@ export default function SendPage() {
               <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><line x1="3" y1="12" x2="21" y2="12" /><line x1="3" y1="6" x2="21" y2="6" /><line x1="3" y1="18" x2="21" y2="18" /></svg>
             </button>
             <span style={{ fontSize: 14, color: '#667781' }}>Enviar mensajes</span>
-            <button className="btn btn-outline btn-sm" style={{ marginLeft: 'auto' }} onClick={() => { window.location.href = '/login'; }}>Salir</button>
+            <button className="btn btn-outline btn-sm" style={{ marginLeft: 'auto' }} onClick={() => { localStorage.removeItem('mercurio_api_key'); dispatch({ type: 'LOGOUT' }); window.location.href = '/login'; }}>Salir</button>
           </div>
           <section className="section active">
             <div className="section-header">
@@ -73,8 +70,8 @@ export default function SendPage() {
             <Card title="1. Seleccione la plantilla">
               <div className="form-group">
                 <select
-                  value={selectedTplId}
-                  onChange={(e) => onTemplateChange(e.target.value)}
+                  value={selectedTplId ?? ''}
+                  onChange={(e) => onTemplateChange(e.target.value ? Number(e.target.value) : null)}
                 >
                   <option value="">-- Seleccione una plantilla --</option>
                   {state.templates.map((t) => (
@@ -184,7 +181,7 @@ export default function SendPage() {
                   <p style={{ fontSize: 13, color: '#667781', marginTop: 8 }}>Corte: {new Date(c.periodo_fin).toLocaleDateString('es-CO')}</p>
                 )}
                 <div className="send-actions" style={{ marginTop: 16 }}>
-                  <button className="btn btn-outline btn-lg" onClick={() => onTemplateChange('')}>
+                  <button className="btn btn-outline btn-lg" onClick={() => onTemplateChange(null)}>
                     <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
                       <polyline points="1 4 1 10 7 10" /><path d="M3.51 15a9 9 0 102.13-9.36L1 10" />
                     </svg>

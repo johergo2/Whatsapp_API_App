@@ -20,13 +20,13 @@ export default function HistoryPage() {
   const loaded = useRef(false);
 
   useEffect(() => {
-    if (!state.demoMode && state.cliente?.id && !loaded.current) {
+    if (!state.demoMode && !loaded.current) {
       loaded.current = true;
-      fetchMessages(state.cliente.id)
+      fetchMessages()
         .then((msgs) => dispatch({ type: 'SET_MESSAGES', payload: msgs }))
         .catch(() => {});
     }
-  }, [state.cliente?.id, state.demoMode, dispatch]);
+  }, [state.demoMode, dispatch]);
 
   return (
     <div id="app">
@@ -41,7 +41,7 @@ export default function HistoryPage() {
               <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><line x1="3" y1="12" x2="21" y2="12" /><line x1="3" y1="6" x2="21" y2="6" /><line x1="3" y1="18" x2="21" y2="18" /></svg>
             </button>
             <span style={{ fontSize: 14, color: '#667781' }}>Historial</span>
-            <button className="btn btn-outline btn-sm" style={{ marginLeft: 'auto' }} onClick={() => { window.location.href = '/login'; }}>Salir</button>
+            <button className="btn btn-outline btn-sm" style={{ marginLeft: 'auto' }} onClick={() => { localStorage.removeItem('mercurio_api_key'); dispatch({ type: 'LOGOUT' }); window.location.href = '/login'; }}>Salir</button>
           </div>
           <section className="section active">
             <div className="section-header">

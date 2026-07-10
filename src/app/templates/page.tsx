@@ -11,9 +11,8 @@ import type { Plantilla } from '@/types';
 export default function TemplatesPage() {
   const { state, dispatch } = useApp();
   const [modalOpen, setModalOpen] = useState(false);
-  const [editingId, setEditingId] = useState<string | null>(null);
+  const [editingId, setEditingId] = useState<number | null>(null);
   const [form, setForm] = useState({
-    id: '',
     name: '',
     template_name: '',
     language_code: 'es_CO',
@@ -22,11 +21,12 @@ export default function TemplatesPage() {
     num_footer: 0,
     footer_captions: ['', '', '', ''],
     message_example: '',
+    descripcion: '',
+    nomb_mio: '',
   });
 
   function resetForm() {
     setForm({
-      id: '',
       name: '',
       template_name: '',
       language_code: 'es_CO',
@@ -35,6 +35,8 @@ export default function TemplatesPage() {
       num_footer: 0,
       footer_captions: ['', '', '', ''],
       message_example: '',
+      descripcion: '',
+      nomb_mio: '',
     });
   }
 
@@ -46,7 +48,6 @@ export default function TemplatesPage() {
 
   function openEdit(t: Plantilla) {
     setForm({
-      id: t.id,
       name: t.name,
       template_name: t.template_name,
       language_code: t.language_code,
@@ -55,6 +56,8 @@ export default function TemplatesPage() {
       num_footer: t.num_footer,
       footer_captions: [...(t.footer_captions || []), '', '', '', ''].slice(0, 4),
       message_example: t.message_example,
+      descripcion: t.descripcion || '',
+      nomb_mio: t.nomb_mio || '',
     });
     setEditingId(t.id);
     setModalOpen(true);
@@ -71,25 +74,27 @@ export default function TemplatesPage() {
       num_footer: form.num_footer,
       footer_captions: form.footer_captions.slice(0, form.num_footer),
       message_example: form.message_example,
+      descripcion: form.descripcion,
+      nomb_mio: form.nomb_mio,
     };
 
     if (editingId) {
       const updated: Plantilla = { id: editingId, ...tplData };
-      if (!state.demoMode && state.cliente?.id) {
+      if (!state.demoMode) {
         try {
           await updateTemplate(updated);
         } catch (e) {
-          console.error('Error updating template in Supabase:', e);
+          console.error('Error updating template:', e);
         }
       }
       dispatch({ type: 'UPDATE_TEMPLATE', payload: updated });
     } else {
-      let created = { id: crypto.randomUUID(), ...tplData };
-      if (!state.demoMode && state.cliente?.id) {
+      let created: Plantilla = { id: 0, ...tplData };
+      if (!state.demoMode) {
         try {
-          created = await addTemplate(state.cliente.id, tplData);
+          created = await addTemplate(tplData);
         } catch (e) {
-          console.error('Error adding template to Supabase:', e);
+          console.error('Error adding template:', e);
         }
       }
       dispatch({ type: 'ADD_TEMPLATE', payload: created });
@@ -97,7 +102,7 @@ export default function TemplatesPage() {
     setModalOpen(false);
   }
 
-  async function deleteTpl(id: string) {
+  async function deleteTpl(id: number) {
     if (!confirm('¿Eliminar esta plantilla?')) return;
     if (!state.demoMode) {
       try {
@@ -122,7 +127,7 @@ export default function TemplatesPage() {
               <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><line x1="3" y1="12" x2="21" y2="12" /><line x1="3" y1="6" x2="21" y2="6" /><line x1="3" y1="18" x2="21" y2="18" /></svg>
             </button>
             <span style={{ fontSize: 14, color: '#667781' }}>Plantillas</span>
-            <button className="btn btn-outline btn-sm" style={{ marginLeft: 'auto' }} onClick={() => { window.location.href = '/login'; }}>Salir</button>
+            <button className="btn btn-outline btn-sm" style={{ marginLeft: 'auto' }} onClick={() => { localStorage.removeItem('mercurio_api_key'); dispatch({ type: 'LOGOUT' }); window.location.href = '/login'; }}>Salir</button>
           </div>
           <section className="section active">
             <div className="section-header">
@@ -144,6 +149,7 @@ export default function TemplatesPage() {
                   <div key={t.id} className="template-card">
                     <h4>{t.name}</h4>
                     <div className="tpl-meta">{t.template_name} · {t.language_code}</div>
+                    {t.descripcion && <div className="tpl-meta" style={{ marginTop: 4, fontStyle: 'italic', fontSize: 12, color: '#667781' }}>{t.descripcion}</div>}
                     <div className="tpl-features">
                       <span className={`tpl-feature ${t.has_header ? 'active' : 'inactive'}`}>
                         <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><rect x="3" y="3" width="18" height="18" rx="2" /><circle cx="8.5" cy="8.5" r="1.5" /><polyline points="21 15 16 10 5 21" /></svg>
@@ -180,7 +186,6 @@ export default function TemplatesPage() {
 
           <Modal open={modalOpen} onClose={() => setModalOpen(false)} title={editingId ? 'Editar plantilla' : 'Nueva plantilla'}>
             <form id="template-form" onSubmit={(e) => { e.preventDefault(); save(); }}>
-              <input type="hidden" value={form.id} />
               <div className="form-group">
                 <label>Nombre interno <span className="req">*</span></label>
                 <input type="text" value={form.name} onChange={(e) => setForm({ ...form, name: e.target.value })} required />
@@ -188,6 +193,14 @@ export default function TemplatesPage() {
               <div className="form-group">
                 <label>Nombre en Meta <span className="req">*</span></label>
                 <input type="text" value={form.template_name} onChange={(e) => setForm({ ...form, template_name: e.target.value })} required />
+              </div>
+              <div className="form-group">
+                <label>Descripción</label>
+                <textarea rows={3} spellCheck={false} value={form.descripcion} onChange={(e) => setForm({ ...form, descripcion: e.target.value })} placeholder="Describe qué incluye la plantilla: si tiene imagen de cabecera, cuántos textos, imágenes al final, etc." />
+              </div>
+              <div className="form-group">
+                <label>Nombre del remitente (nomb_mio)</label>
+                <input type="text" value={form.nomb_mio} onChange={(e) => setForm({ ...form, nomb_mio: e.target.value })} placeholder="Ej: Jorge Hernán Gómez" />
               </div>
               <div className="form-row">
                 <div className="form-group">
@@ -243,7 +256,7 @@ export default function TemplatesPage() {
               )}
               <div className="form-group">
                 <label>Ejemplo del mensaje</label>
-                <textarea rows={3} value={form.message_example} onChange={(e) => setForm({ ...form, message_example: e.target.value })} placeholder="Opcional. Escriba un ejemplo de cómo se ve el mensaje completo" />
+                <textarea rows={3} spellCheck={false} value={form.message_example} onChange={(e) => setForm({ ...form, message_example: e.target.value })} placeholder="Opcional. Escriba un ejemplo de cómo se ve el mensaje completo" />
               </div>
               <div className="form-actions">
                 <button type="button" className="btn btn-outline" onClick={() => setModalOpen(false)}>Cancelar</button>

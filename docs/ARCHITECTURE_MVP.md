@@ -1,84 +1,107 @@
 # ARCHITECTURE MVP — Mercurio Send
 
-## Arquitectura Actual (Prototipo)
+## Arquitectura Actual (Migración a Next.js + Supabase)
 
 ```
-┌─────────────────────────────────────────────────┐
-│                  Navegador                       │
-│  ┌───────────────────────────────────────────┐   │
-│  │           index.html (SPA)                 │   │
-│  │  ┌─────────┐  ┌─────────┐  ┌──────────┐   │   │
-│  │  │ Login   │  │Dashboard│  │Templates │   │   │
-│  │  │ Section │  │ Section │  │ Section  │   │   │
-│  │  └─────────┘  └─────────┘  └──────────┘   │   │
-│  │  ┌─────────┐  ┌─────────┐  ┌──────────┐   │   │
-│  │  │Prospects│  │  Send   │  │ History  │   │   │
-│  │  │ Section │  │ Section │  │ Section  │   │   │
-│  │  └─────────┘  └─────────┘  └──────────┘   │   │
-│  │                                            │   │
-│  │  app.js (lógica) ←→ api.js (API/mock)     │   │
-│  │              ↕                             │   │
-│  │        localStorage                        │   │
-│  └───────────────────────────────────────────┘   │
-│                         ↕                        │
-│              HTTP (fallback mock)                 │
-└─────────────────────────────────────────────────┘
-                         ↕
-            ┌──────────────────────┐
-            │  Render (caído)      │
-            │  FastAPI Backend     │
-            │  whatsapp-api-       │
-            │  fastapi.onrender.com│
-            └──────────────────────┘
+┌─────────────────────────────────────────────────────────────┐
+│                    Navegador                                │
+│  ┌───────────────────────────────────────────────────────┐  │
+│  │              Next.js App (React/TypeScript)            │  │
+│  │  ┌──────────┐ ┌──────────┐ ┌────────────┐ ┌────────┐ │  │
+│  │  │  Login   │ │Templates │ │ Prospects  │ │ Send   │ │  │
+│  │  │  Page    │ │  Page    │ │   Page     │ │  Page  │ │  │
+│  │  └──────────┘ └──────────┘ └────────────┘ └────────┘ │  │
+│  │  ┌──────────┐ ┌──────────┐ ┌────────────┐            │  │
+│  │  │ History  │ │Dashboard │ │   ...      │            │  │
+│  │  │  Page    │ │  Page    │ │            │            │  │
+│  │  └──────────┘ └──────────┘ └────────────┘            │  │
+│  │                                                       │  │
+│  │  services.ts (fetch → API Routes)                     │  │
+│  │         ↕                                             │  │
+│  │  store.tsx (React Context - estado global)             │  │
+│  └───────────────────────────────────────────────────────┘  │
+│                         ↕ HTTP (X-API-Key header)           │
+└─────────────────────────────────────────────────────────────┘
+        ↕                      ↕                      ↕
+   ┌──────────┐    ┌──────────────────┐    ┌──────────────┐
+   │  Vercel  │    │   Vercel Edge    │    │   Vercel     │
+   │  Static  │    │  API Routes      │    │  Webhook     │
+   │  Assets  │    │  (serverless)    │    │  (POST only) │
+   └──────────┘    └────────┬─────────┘    └──────┬───────┘
+                            ↕                     ↕
+                    ┌──────────────────────────────────┐
+                    │          Supabase                 │
+                    │  ┌──────────────────────────────┐ │
+                    │  │        PostgreSQL DB         │ │
+                    │  │  - clientes_whatsapp         │ │
+                    │  │  - contactos_whatsapp        │ │
+                    │  │  - mensajes_whatsapp         │ │
+                    │  │  - estado_mensajes_whatsapp  │ │
+│  │  - variables_whatsapp        │ │
+│  │  - plantillas                │ │
+│  │  - prospectos                │ │
+│  │  - send_form_data            │ │
+                    │  └──────────────────────────────┘ │
+                    └──────────────────────────────────┘
 ```
 
-## Arquitectura Destino (Vercel + Supabase)
+## Ambientes
 
+### Desarrollo Local
 ```
-┌─────────────────────────────────────────────────┐
-│                  Navegador                       │
-│  ┌───────────────────────────────────────────┐   │
-│  │   index.html (SPA - servido por Vercel)   │   │
-│  │   app.js ←→ api.js (con Supabase SDK)    │   │
-│  └───────────────────────────────────────────┘   │
-└─────────────────────────────────────────────────┘
-         ↕                          ↕
-    Vercel Edge               Supabase
-    (static files)         ┌──────────────────┐
-                           │  PostgreSQL DB   │
-                           │  - clientes      │
-                           │  - plantillas    │
-                           │  - prospectos    │
-                           │  - mensajes      │
-                           └──────────────────┘
+npm run dev -p 3002
+→ API Routes en http://localhost:3002/api/*
+→ Se conecta a Supabase (misma DB que producción)
 ```
 
-## Principios de Diseño
-1. **Sin backend propio** — Vercel sirve estáticos, Supabase es la base de datos
-2. **Offline-first** — el prototipo funciona completamente sin conexión a API
-3. **Mock mode** — detectable por el usuario (banner)
-4. **Estado en localStorage** — reemplazable por Supabase sin cambios en la UI
-5. **Columnas dinámicas** — la UI se adapta a la estructura de la plantilla
+### Producción (Vercel)
+```
+https://whatsapp-api-app-silk.vercel.app
+→ API Routes desplegadas en Vercel Edge
+→ Misma base de datos Supabase
+```
 
-## Flujo de Datos (MVP)
+## Flujo de Datos
 
 ### Lectura
 ```
-UI → app.js → api.js → Supabase SDK → PostgreSQL
-                    ↕ (fallback)
-                 localStorage (caché local)
+UI → services.ts → fetch('GET /api/...') con X-API-Key
+  → API Route valida API Key (SHA256 vs clientes_whatsapp)
+  → Supabase SELECT
+  → Respuesta JSON → store.tsx → UI
 ```
 
 ### Escritura
 ```
-UI → app.js → api.js → Supabase SDK → PostgreSQL
-                    ↕ (si offline)
-                 localStorage → sync cuando vuelva conexión
+UI → services.ts → fetch('POST/PUT/DELETE /api/...') con X-API-Key
+  → API Route valida API Key
+  → Supabase INSERT/UPDATE/DELETE
+  → Respuesta JSON → UI
 ```
 
-## Estados de UI
-Cada sección maneja explícitamente:
-- **Loading**: spinner mientras carga datos
-- **Empty**: mensaje cuando no hay datos
-- **Error**: toast con descripción del error
-- **Success**: datos renderizados
+### Envío de Mensajes
+```
+UI → services.ts → POST /api/send-message (o send-media)
+  → API Route valida API Key
+  → Obtiene META_TOKEN de variables_whatsapp
+  → Envía a Meta Cloud API (graph.facebook.com)
+  → Guarda en mensajes_whatsapp
+  → Incrementa requests_usadas en clientes_whatsapp
+```
+
+### Webhook Meta
+```
+Meta → POST /api/webhook
+  → Procesa actualizaciones de estado (entregado, leído, fallido)
+  → Procesa mensajes entrantes
+  → Guarda en estado_mensajes_whatsapp / mensajes_whatsapp
+  → Sincroniza contactos en contactos_whatsapp
+  → (Opcional) Reenvía a Chatwoot
+```
+
+## Principios de Diseño
+1. **Todo pasa por API Routes** — el navegador nunca habla directo a Supabase
+2. **API Key como autenticación** — hash SHA256 en cada request
+3. **Sin modo demo** — error real si la API Key es inválida
+4. **Estado global** — React Context (store.tsx) mantiene el estado de la UI
+5. **Misma DB para desarrollo y producción** — los datos de prueba se borran manualmente

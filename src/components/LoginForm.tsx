@@ -13,12 +13,11 @@ export function LoginForm() {
   const [error, setError] = useState('');
   const [showKey, setShowKey] = useState(false);
 
-  async function loadData(clienteId: number) {
+  async function loadData() {
     try {
-      const data = await loadAllClientData(clienteId);
+      const data = await loadAllClientData();
       dispatch({ type: 'SET_ALL_DATA', payload: data });
     } catch {
-      // Data load failure is non-fatal — app works with empty data
     }
   }
 
@@ -42,8 +41,9 @@ export function LoginForm() {
       const data = await res.json();
       dispatch({ type: 'SET_CLIENTE', payload: data });
       dispatch({ type: 'SET_DEMO_MODE', payload: false });
+      localStorage.setItem('mercurio_api_key', apiKey.trim());
 
-      if (data.id) await loadData(data.id);
+      if (data.id) await loadData();
 
       router.push('/');
     } catch {

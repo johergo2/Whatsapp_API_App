@@ -56,7 +56,7 @@ export interface EstadoMensaje {
 }
 
 export interface Plantilla {
-  id: string;
+  id: number;
   cliente_id?: number;
   name: string;
   template_name: string;
@@ -66,6 +66,8 @@ export interface Plantilla {
   num_footer: number;
   footer_captions: string[];
   message_example: string;
+  descripcion: string;
+  nomb_mio: string;
 }
 
 export interface Prospecto {

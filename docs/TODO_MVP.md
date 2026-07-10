@@ -5,54 +5,59 @@
 - [ ] Pendiente
 - [~] En progreso
 
-## FASE 1 — Prototipo Funcional (Completado)
-
-### Frontend
-- [x] Login con API Key + modo demo automático
-- [x] Dashboard con estadísticas del plan
+## FASE 1 — Prototipo Funcional (Legado)
+- [x] Login con API Key
 - [x] Template manager (CRUD completo)
 - [x] Prospectos con columnas dinámicas según plantilla
-- [x] URLs editables inline en tabla de prospectos
-- [x] Editor de caption por imagen por prospecto (modal ✏️)
 - [x] Envío desde Prospectos con barra de progreso
 - [x] Sección "Enviar mensajes" con textos y defaults
 - [x] Historial de mensajes
 - [x] Importación CSV con detección de encabezado
 - [x] Descarga de CSV ejemplo
-- [x] Persistencia en localStorage
-- [x] Mock mode con datos de ejemplo
 - [x] Diseño responsive
 
-### Backend (API original)
-- [x] Endpoint GET /cliente
-- [x] Endpoint GET /variables
-- [x] Endpoint POST /send-message
-- [x] Endpoint POST /send-media
-
-## FASE 2 — Migración a Vercel + Supabase
+## FASE 2 — Migración a Next.js + Vercel + Supabase
 
 ### Repositorio
 - [x] Repositorio Git inicializado
 - [x] Remote configurado
-- [x] Commit inicial
 - [x] Push a GitHub
 
-### Supabase
-- [x] Crear proyecto en Supabase
-- [x] Ejecutar esquema SQL (ver DATABASE_SCHEMA.md)
-- [ ] Configurar RLS y políticas de seguridad
-- [x] Copiar SUPABASE_URL y SUPABASE_ANON_KEY
+### Migración de Código
+- [x] Proyecto Next.js 14 creado
+- [x] Tipos TypeScript definidos
+- [x] Store (React Context) implementado
+- [x] Componentes de UI migrados (Sidebar, Card, Modal, LoginForm)
+- [x] Páginas: Templates, Prospects, Send, History, Login
+- [x] Variables de entorno configuradas
 
-### Vercel
-- [ ] Importar repositorio desde GitHub
-- [ ] Configurar environment variables
-- [ ] Desplegar
+### API Routes
+- [x] GET /api/cliente — validación API Key (SHA256)
+- [x] GET /api/variables — variables de Meta
+- [x] GET|POST|PUT|DELETE /api/plantillas — CRUD vía API
+- [x] GET|POST|PUT|DELETE /api/prospectos — CRUD vía API
+- [x] GET /api/mensajes — historial vía API
+- [x] POST /api/send-message — envío de templates
+- [x] POST /api/send-media — envío de imágenes/video
+- [x] GET|POST /api/webhook — webhook Meta
+- [x] POST /api/outbound — registro manual
+- [x] GET|POST /api/send-form-data — persistencia de formulario de envío
 
-### Adaptación del Código
-- [ ] Reemplazar localStorage por llamadas Supabase en api.js
-- [ ] Agregar SDK de Supabase vía CDN
-- [ ] Migrar mock data a datos reales desde DB
-- [ ] Probar flujo completo con DB real
+### Base de Datos
+- [x] Esquema SQL con 7 tablas (original + auxiliares)
+- [x] Seed data para cliente #1
+- [x] Función RPC increment_requests_usadas
+- [x] Triggers para fecha_actualizacion
+
+### Despliegue
+- [x] Vercel project configurado
+- [x] Environment variables en Vercel
+- [x] App desplegada en producción
+
+### Webhook
+- [x] VERIFY_TOKEN configurado
+- [x] Webhook de Meta conectado
+- [x] Suscripción a eventos messages
 
 ## FASE 3 — Mejoras Post-MVP
 
@@ -78,18 +83,15 @@
 - [ ] Tests unitarios (Vitest)
 - [ ] Tests de integración (Playwright)
 - [ ] Linting (ESLint)
-- [ ] TypeScript (migración gradual)
+- [ ] TypeScript strict mode
 
 ## FASE 4 — Escalabilidad
-
-- [ ] Serverless functions en Vercel para lógica sensible
 - [ ] Cache con Redis (Upstash)
 - [ ] CDN para imágenes
 - [ ] Backup automático de base de datos
 - [ ] Monitoreo (Sentry)
 
 ## Issues Conocidos
-- Render API free tier expirado → app funciona solo en mock mode
-- Sin autenticación real → cualquier API Key funciona si Render está caído
-- El estado de los prospectos se pierde al limpiar localStorage
+- Desarrollo local y producción comparten la misma DB de Supabase
+- Sin autenticación real — solo API Key
 - No hay validación de formato de teléfono

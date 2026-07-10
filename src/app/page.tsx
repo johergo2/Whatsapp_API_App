@@ -6,7 +6,7 @@ import { LoginForm } from '@/components/LoginForm';
 import { Dashboard } from '@/components/Dashboard';
 
 export default function Home() {
-  const { state } = useApp();
+  const { state, dispatch } = useApp();
 
   if (!state.cliente) {
     return <LoginForm />;
@@ -35,6 +35,8 @@ export default function Home() {
             </span>
             <button className="btn btn-outline btn-sm" style={{ marginLeft: 'auto' }} onClick={() => {
               if (typeof window !== 'undefined') {
+                localStorage.removeItem('mercurio_api_key');
+                dispatch({ type: 'LOGOUT' });
                 window.location.href = '/login';
               }
             }}>
