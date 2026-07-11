@@ -77,7 +77,7 @@ export async function POST(req: NextRequest) {
       components.push({ type: 'header', parameters: [{ type: 'image', image: { link } }] });
     } else if (header_document_url && String(header_document_url).trim() !== '') {
       const link = normalizeUrl(String(header_document_url));
-      components.push({ type: 'header', parameters: [{ type: 'document', document: { link, filename: `Cuenta_cobro_${to}.pdf` } }] });
+      components.push({ type: 'header', parameters: [{ type: 'document', document: { link, filename: String(header_document_url).trim().split('/').pop() } }] });
     }
 
     components.push({ type: 'body', parameters: bodyParams });
