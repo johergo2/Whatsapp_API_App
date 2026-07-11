@@ -59,20 +59,13 @@ export async function POST(req: NextRequest) {
 
     const components: any[] = [];
 
+    const appUrl = process.env.NEXT_PUBLIC_APP_URL || `https://${process.env.VERCEL_URL || 'whatsapp-api-app-silk.vercel.app'}`;
+
     const normalizeUrl = (url: string) => {
       let u = url.trim();
-      // If just a filename (no http), build the full Supabase Storage URL
       if (!u.startsWith('http://') && !u.startsWith('https://')) {
-        const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL || process.env.SUPABASE_URL || '';
-        if (supabaseUrl) {
-          return `${supabaseUrl}/storage/v1/object/download/public/documentos/${encodeURIComponent(u)}`;
-        }
-        return u;
+        return `${appUrl}/api/documento?archivo=${encodeURIComponent(u)}`;
       }
-      // Full URL with Supabase: replace /object/public/ with /object/download/public/
-      u = u.replace(/\/object\/public\//, '/object/download/public/');
-      // Encode spaces just in case
-      u = u.replace(/ /g, '%20');
       return u;
     };
 
