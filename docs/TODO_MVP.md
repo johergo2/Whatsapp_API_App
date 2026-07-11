@@ -35,13 +35,24 @@
 - [x] GET /api/cliente — validación API Key (SHA256)
 - [x] GET /api/variables — variables de Meta
 - [x] GET|POST|PUT|DELETE /api/plantillas — CRUD vía API
-- [x] GET|POST|PUT|DELETE /api/prospectos — CRUD vía API
+- [x] GET|POST|PUT|DELETE /api/prospectos — CRUD vía API (DELETE sin ?id= borra todos)
 - [x] GET /api/mensajes — historial vía API
 - [x] POST /api/send-message — envío de templates
 - [x] POST /api/send-media — envío de imágenes/video
 - [x] GET|POST /api/webhook — webhook Meta
 - [x] POST /api/outbound — registro manual
 - [x] GET|POST /api/send-form-data — persistencia de formulario de envío
+
+### Funcionalidad
+- [x] Import CSV persiste en BD (reemplaza todos los prospectos del cliente)
+- [x] Auto-restauración de sesión al refrescar página
+- [x] Checkbox "Solo pendientes" funcional en envío
+- [x] Campo nomb_mio en plantillas (nombre del remitente)
+- [x] header_type reemplazó has_header (none/image/document/video)
+- [x] adjunto_cabecera reemplazó header_img en prospectos
+- [x] CSV import soporta columna "adjunto cabecera"
+- [x] Dashboard muestra número de WhatsApp (display_number)
+- [x] Estado de envío visible completo y seleccionable
 
 ### Base de Datos
 - [x] Esquema SQL con 7 tablas (original + auxiliares)

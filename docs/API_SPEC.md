@@ -63,7 +63,7 @@ Retorna variables de configuración como `Record<string, string>`.
 ### `GET|POST|PUT|DELETE /api/plantillas`
 CRUD de plantillas (tabla `plantillas`).
 
-**GET** — Listar todas las plantillas del cliente autenticado.
+**GET** — Listar todas las plantillas del cliente autenticado. Cada plantilla incluye `header_type` (`none`, `image`, `document`, `video`).
 
 **POST** — Crear plantilla.
 ```json
@@ -72,17 +72,18 @@ CRUD de plantillas (tabla `plantillas`).
   "template_name": "ofrecer_whatsapp2",
   "language_code": "es_CO",
   "num_textos": 4,
-  "has_header": true,
+  "header_type": "image",
   "num_footer": 0,
   "footer_captions": [],
   "message_example": "Hola {{1}}, te escribo de {{2}}...",
-  "descripcion": "Template con imagen de cabecera y 4 textos variables"
+  "descripcion": "Template con imagen de cabecera y 4 textos variables",
+  "nomb_mio": "Jorge Hernán Gómez"
 }
 ```
 
-**PUT** — Actualizar plantilla (requiere `id` en body).
+**PUT** — Actualizar plantilla (requiere `id` en body). Campos: mismos que POST más `id`.
 
-**DELETE** — Eliminar plantilla (`?id=uuid`).
+**DELETE** — Eliminar plantilla (`?id=numero`).
 
 ---
 
@@ -96,7 +97,7 @@ CRUD de prospectos (tabla `prospectos`).
 {
   "nombre": "Juan Pérez",
   "telefono": "573001234567",
-  "header_img": "https://...",
+  "adjunto_cabecera": "https://...",
   "footer_imgs": ["https://..."],
   "captions": ["Texto opcional"],
   "estado": ""
@@ -105,7 +106,9 @@ CRUD de prospectos (tabla `prospectos`).
 
 **PUT** — Actualizar prospecto (requiere `id` en body).
 
-**DELETE** — Eliminar prospecto (`?id=numero`).
+**DELETE** — Eliminar prospecto.
+- `DELETE /api/prospectos?id=numero` — elimina un prospecto específico
+- `DELETE /api/prospectos` (sin `?id=`) — elimina **todos** los prospectos del cliente autenticado (usado en importación CSV)
 
 ---
 
@@ -133,6 +136,8 @@ Envía un template message a través de Meta Cloud API.
   "texto4": "valor"
 }
 ```
+
+Para adjunto de tipo documento usar `header_document_url`, para video usar `header_video_url`.
 
 **Proceso:**
 1. Obtiene `phone_number_id` y `META_TOKEN` de la BD

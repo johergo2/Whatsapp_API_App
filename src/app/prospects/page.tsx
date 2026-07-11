@@ -23,7 +23,7 @@ export default function ProspectsPage() {
   const [editIdx, setEditIdx] = useState(-1);
   const [editName, setEditName] = useState('');
   const [editPhone, setEditPhone] = useState('');
-  const [editHeaderImg, setEditHeaderImg] = useState('');
+  const [editAdjunto, setEditAdjunto] = useState('');
   const [editFooterImgs, setEditFooterImgs] = useState<string[]>([]);
   const [captionModalOpen, setCaptionModalOpen] = useState(false);
   const [captionProspect, setCaptionProspect] = useState(-1);
@@ -46,7 +46,7 @@ function openNew() {
     setEditIdx(-1);
     setEditName('');
     setEditPhone('');
-    setEditHeaderImg('');
+    setEditAdjunto('');
     setEditFooterImgs([]);
     setModalOpen(true);
   }
@@ -56,7 +56,7 @@ function openNew() {
     setEditIdx(i);
     setEditName(p.nombre);
     setEditPhone(p.telefono);
-    setEditHeaderImg(p.header_img || '');
+    setEditAdjunto(p.adjunto_cabecera || '');
     setEditFooterImgs([...(p.footer_imgs || [])]);
     setModalOpen(true);
   }
@@ -66,7 +66,7 @@ function openNew() {
     const data: Prospecto = {
       nombre: editName,
       telefono: editPhone,
-      header_img: tpl?.has_header ? editHeaderImg : '',
+      adjunto_cabecera: tpl?.header_type !== 'none' ? editAdjunto : '',
       footer_imgs: tpl?.num_footer ? editFooterImgs : [],
       captions: [],
       estado: '',
@@ -148,14 +148,47 @@ function openNew() {
       if (lines.length === 0) return;
       const first = lines[0].toLowerCase();
       const hasHeader = first.includes('nombre') || first.includes('name') || first.includes('nomb');
+      const rawHeaders = hasHeader ? lines[0].split(',').map(s => s.trim().toLowerCase().replace(/^"|"$/g, '')) : [];
+      const adjuntoIdx = rawHeaders.findIndex(h => h.replace(/_/g, ' ').includes('adjunto') || h.replace(/_/g, ' ').includes('cabecera'));
+      const imgIndices = [1, 2, 3, 4].map(i => {
+        const idx = rawHeaders.indexOf(`imagen_${i}`);
+        return idx >= 0 ? idx : rawHeaders.indexOf(`imagen ${i}`);
+      });
       const dataLines = hasHeader ? lines.slice(1) : lines;
       const prospects: Omit<Prospecto, 'id'>[] = [];
-      dataLines.forEach((line) => {
+      const rowErrors: string[] = [];
+      dataLines.forEach((line, rowIdx) => {
         const parts = line.split(',').map((s) => s.trim().replace(/^"|"$/g, ''));
         if (parts.length >= 2 && parts[0] && parts[1]) {
-          prospects.push({ nombre: parts[0], telefono: parts[1], header_img: '', footer_imgs: [], captions: [], estado: '' });
+          const footer_imgs: string[] = [];
+          for (let i = 0; i < 4; i++) {
+            if (imgIndices[i] >= 0 && parts[imgIndices[i]]) {
+              footer_imgs.push(parts[imgIndices[i]]);
+            } else {
+              break;
+            }
+          }
+          if (tpl && tpl.num_footer > 0) {
+            const filled = footer_imgs.length;
+            if (filled < tpl.num_footer) {
+              rowErrors.push(`Fila ${rowIdx + 2} (${parts[0]}): tiene ${filled} imagen(es), la plantilla requiere ${tpl.num_footer}`);
+            }
+          }
+          prospects.push({
+            nombre: parts[0],
+            telefono: parts[1],
+            adjunto_cabecera: adjuntoIdx >= 0 ? parts[adjuntoIdx] || '' : '',
+            footer_imgs,
+            captions: [],
+            estado: '',
+          });
         }
       });
+
+      if (rowErrors.length > 0) {
+        alert('Errores de validación en el CSV:\n' + rowErrors.join('\n'));
+        return;
+      }
 
       if (prospects.length === 0) {
         alert('No se encontraron prospectos válidos en el CSV');
@@ -202,8 +235,8 @@ function openNew() {
     // Validate prospects against template
     const errors: string[] = [];
     targets.forEach((p) => {
-      if (tpl.has_header && !p.header_img && !saved.header_img) {
-        errors.push(`${p.nombre}: falta imagen de cabecera`);
+      if (tpl.header_type !== 'none' && !p.adjunto_cabecera && !saved.adjunto_cabecera) {
+        errors.push(`${p.nombre}: falta adjunto de cabecera`);
       }
       if (tpl.num_footer > 0) {
         for (let i = 1; i <= tpl.num_footer; i++) {
@@ -236,22 +269,28 @@ function openNew() {
         newLogs.push(`Enviando a ${prospect.nombre} (${prospect.telefono})...`);
         setLogs(newLogs);
 
-        const headerUrl = tpl.has_header ? (prospect.header_img || saved.header_img || '') : '';
+        const adjuntoUrl = tpl.header_type !== 'none' ? (prospect.adjunto_cabecera || saved.adjunto_cabecera || '') : '';
         const textValues: Record<string, string> = {};
         for (let j = 1; j <= tpl.num_textos; j++) {
           textValues[`texto${j}`] = saved[`texto${j}`] || '';
         }
 
-        const templatePayload = {
+        const headerField = tpl.header_type === 'image' ? 'header_image_url'
+          : tpl.header_type === 'document' ? 'header_document_url'
+          : tpl.header_type === 'video' ? 'header_video_url' : '';
+
+        const templatePayload: Record<string, string | number> = {
           cliente_id: state.cliente?.id || 1,
           to: prospect.telefono,
           template_name: tpl.template_name,
           language_code: tpl.language_code,
           nombre_clie: prospect.nombre,
           nomb_mio: tpl.nomb_mio || state.cliente?.nombre_comercial || '',
-          header_image_url: headerUrl,
           ...textValues,
         };
+        if (headerField) {
+          templatePayload[headerField] = adjuntoUrl;
+        }
 
         const res1 = await fetch('/api/send-message', {
           method: 'POST',
@@ -316,7 +355,7 @@ function openNew() {
     setSending(false);
   }
 
-  const emptyCols = 2 + (tpl?.has_header ? 1 : 0) + (tpl?.num_footer || 0) * 2 + 2;
+  const emptyCols = 2 + (tpl?.header_type !== 'none' ? 1 : 0) + (tpl?.num_footer || 0) * 2 + 2;
 
   return (
     <div id="app">
@@ -366,7 +405,13 @@ function openNew() {
                   <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><line x1="12" y1="5" x2="12" y2="19" /><line x1="5" y1="12" x2="19" y2="12" /></svg>
                   Agregar
                 </button>
-                <button className="btn btn-outline" onClick={() => document.getElementById('import-csv')?.click()}>
+                <button className="btn btn-outline" onClick={() => {
+                  if (!state.prosTemplateId) {
+                    alert('Primero seleccione una plantilla en el campo "Plantilla para enviar"');
+                    return;
+                  }
+                  document.getElementById('import-csv')?.click();
+                }}>
                   <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4" /><polyline points="7 10 12 15 17 10" /><line x1="12" y1="15" x2="12" y2="3" /></svg>
                   Importar
                 </button>
@@ -380,7 +425,7 @@ function openNew() {
                     <tr id="prospects-header-row">
                       <th>Nombre</th>
                       <th>Teléfono</th>
-                      {tpl?.has_header && <th>URL Cabecera</th>}
+                      {tpl?.header_type !== 'none' && <th>Adjunto Cabecera</th>}
                       {tpl &&
                         Array.from({ length: tpl.num_footer }).map((_, j) => (
                           <React.Fragment key={j}>
@@ -404,14 +449,14 @@ function openNew() {
                         <tr key={i}>
                           <td><strong>{p.nombre}</strong></td>
                           <td>{p.telefono}</td>
-                          {tpl?.has_header && (
+                          {tpl?.header_type !== 'none' && (
                             <td>
                               <input
                                 type="url"
                                 className="cell-input"
-                                value={p.header_img || defaults.header_img || ''}
-                                onChange={(e) => updateField(i, 'header_img', e.target.value)}
-                                placeholder="URL cabecera"
+                                value={p.adjunto_cabecera || defaults.adjunto_cabecera || ''}
+                                onChange={(e) => updateField(i, 'adjunto_cabecera', e.target.value)}
+                                placeholder="URL adjunto"
                               />
                             </td>
                           )}
@@ -519,10 +564,10 @@ function openNew() {
                   <label>Teléfono <span className="req">*</span></label>
                   <input type="text" value={editPhone} onChange={(e) => setEditPhone(e.target.value)} placeholder="573001234567" required />
                 </div>
-                {tpl?.has_header && (
+                {tpl?.header_type !== 'none' && (
                   <div className="form-group">
-                    <label>URL imagen de cabecera</label>
-                    <input type="url" value={editHeaderImg} onChange={(e) => setEditHeaderImg(e.target.value)} placeholder="https://..." />
+                    <label>URL adjunto cabecera</label>
+                    <input type="url" value={editAdjunto} onChange={(e) => setEditAdjunto(e.target.value)} placeholder="https://..." />
                   </div>
                 )}
                 {tpl &&

@@ -2,7 +2,7 @@
 
 import { useApp } from '@/lib/store';
 import { Sidebar } from '@/components/ui/Sidebar';
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { Card } from '@/components/ui/Card';
 import { upsertSendFormData } from '@/lib/services';
 import type { SendFormValues } from '@/types';
@@ -11,6 +11,14 @@ export default function SendPage() {
   const { state, dispatch } = useApp();
   const [selectedTplId, setSelectedTplId] = useState<number | null>(null);
   const [form, setForm] = useState<SendFormValues>({});
+  const [toast, setToast] = useState<{ type: 'success' | 'error'; message: string } | null>(null);
+
+  useEffect(() => {
+    if (toast) {
+      const t = setTimeout(() => setToast(null), 3000);
+      return () => clearTimeout(t);
+    }
+  }, [toast]);
 
   const tpl = selectedTplId ? state.templates.find((t) => t.id === selectedTplId) : null;
   const saved = selectedTplId ? state.sendFormData[String(selectedTplId)] || {} : {};
@@ -36,8 +44,9 @@ export default function SendPage() {
       dispatch({ type: 'SET_SEND_FORM_DATA', payload: { templateId: selectedTplId, values: form } });
       try {
         await upsertSendFormData(selectedTplId, form);
+        setToast({ type: 'success', message: 'Valores guardados correctamente' });
       } catch (e) {
-        console.error('Error saving form data:', e);
+        setToast({ type: 'error', message: 'Error al guardar los valores' });
       }
     }
   }
@@ -84,7 +93,7 @@ export default function SendPage() {
                   <div className="summary-grid">
                     <div><span className="summary-label">Plantilla Meta</span><span className="summary-value">{tpl.template_name}</span></div>
                     <div><span className="summary-label">Idioma</span><span className="summary-value">{tpl.language_code}</span></div>
-                    <div><span className="summary-label">Cabecera</span><span className="summary-value">{tpl.has_header ? 'Sí' : 'No'}</span></div>
+                    <div><span className="summary-label">Cabecera</span><span className="summary-value">{tpl.header_type === 'image' ? 'Imagen' : tpl.header_type === 'document' ? 'Documento' : tpl.header_type === 'video' ? 'Video' : 'No'}</span></div>
                     <div><span className="summary-label">Textos</span><span className="summary-value">{tpl.num_textos}</span></div>
                     <div><span className="summary-label">Imágenes final</span><span className="summary-value">{tpl.num_footer > 0 ? `${tpl.num_footer} imágenes` : 'No'}</span></div>
                   </div>
@@ -120,15 +129,15 @@ export default function SendPage() {
                     </div>
                   )}
 
-                  {tpl.has_header && (
+                  {tpl.header_type !== 'none' && (
                     <div className="dynamic-section field-required">
-                      <h4>Imagen de cabecera</h4>
+                      <h4>{tpl.header_type === 'image' ? 'Imagen' : tpl.header_type === 'document' ? 'Documento (PDF)' : 'Video'} de cabecera</h4>
                       <div className="form-group">
                         <label>URL por defecto</label>
                         <input
                           type="url"
-                          value={form.header_img || saved.header_img || ''}
-                          onChange={(e) => updateField('header_img', e.target.value)}
+                          value={form.adjunto_cabecera || saved.adjunto_cabecera || ''}
+                          onChange={(e) => updateField('adjunto_cabecera', e.target.value)}
                           placeholder="https://..."
                         />
                       </div>
@@ -165,6 +174,11 @@ export default function SendPage() {
                 </div>
                 <div className="form-actions" style={{ border: 'none', paddingTop: 8, marginTop: 0 }}>
                   <button className="btn btn-primary" onClick={saveForm}>Guardar valores</button>
+                  {toast && (
+                    <span style={{ marginLeft: 12, fontSize: 13, color: toast.type === 'success' ? '#25D366' : '#e74c3c', fontWeight: 500 }}>
+                      {toast.message}
+                    </span>
+                  )}
                 </div>
               </Card>
             )}

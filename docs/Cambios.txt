@@ -19,6 +19,7 @@ MIGRACIÓN COMPLETA A NEXT.JS 14 + API ROUTES
   * GET|POST /api/webhook — webhook Meta
   * POST /api/outbound — registro manual de salida
   * POST /api/chatwoot/webhook — webhook Chatwoot
+  * GET|POST /api/send-form-data — persistencia de formulario
 
 ============================================================
 ARQUITECTURA DE COMUNICACIÓN
@@ -40,7 +41,7 @@ BASE DE DATOS
 - Migración completa al esquema original de FastAPI
 - Tablas: clientes_whatsapp, contactos_whatsapp, mensajes_whatsapp,
   estado_mensajes_whatsapp, variables_whatsapp, plantillas, prospectos
-- send_form_data eliminada (no estaba en esquema original)
+- send_form_data agregada posteriormente para persistir formulario
 - Seed data para cliente #1 Productos & Asesorias
 
 ============================================================
@@ -58,6 +59,25 @@ AMBIENTES
 - Desarrollo local: http://localhost:3002 (npm run dev)
 - Producción: https://whatsapp-api-app-silk.vercel.app
 - Ambos comparten la misma base de datos Supabase
+
+============================================================
+MEJORAS EN PLANTILLAS Y PROSPECTOS (10/07/2026)
+============================================================
+
+- has_header (booleano) reemplazado por header_type con valores:
+  none, image, document, video
+- El checkbox "Tiene adjunto en la cabecera" ahora es un select
+  con las 4 opciones
+- header_img en prospectos reemplazado por adjunto_cabecera
+- La columna "URL Cabecera" en tabla de prospectos ahora es
+  "Adjunto Cabecera"
+- CSV import soporta columna "adjunto cabecera" con nombre de
+  archivo o URL directa
+- API send-message ya soporta header_document_url y
+  header_video_url para adjuntos tipo documento y video
+- El envío selecciona automáticamente el campo correcto según
+  header_type de la plantilla
+- Todo listo para usar URLs de Supabase Storage para PDFs
 
 ============================================================
 DOCUMENTACIÓN

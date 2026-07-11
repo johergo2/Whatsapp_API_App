@@ -12,13 +12,14 @@
 │  │  │  Page    │ │  Page    │ │   Page     │ │  Page  │ │  │
 │  │  └──────────┘ └──────────┘ └────────────┘ └────────┘ │  │
 │  │  ┌──────────┐ ┌──────────┐ ┌────────────┐            │  │
-│  │  │ History  │ │Dashboard │ │   ...      │            │  │
-│  │  │  Page    │ │  Page    │ │            │            │  │
+│  │  │ History  │ │Dashboard │ │ Session    │            │  │
+│  │  │  Page    │ │  Page    │ │ Banner     │            │  │
 │  │  └──────────┘ └──────────┘ └────────────┘            │  │
 │  │                                                       │  │
 │  │  services.ts (fetch → API Routes)                     │  │
 │  │         ↕                                             │  │
 │  │  store.tsx (React Context - estado global)             │  │
+│  │  AppProvider (restaura sesión al montar)              │  │
 │  └───────────────────────────────────────────────────────┘  │
 │                         ↕ HTTP (X-API-Key header)           │
 └─────────────────────────────────────────────────────────────┘
@@ -99,9 +100,21 @@ Meta → POST /api/webhook
   → (Opcional) Reenvía a Chatwoot
 ```
 
+### Session Restore (auto-login)
+```
+AppProvider (useEffect on mount)
+  → localStorage.getItem('mercurio_api_key')
+  → Si existe: GET /api/cliente con X-API-Key
+    → Si ok: SET_CLIENTE + loadAllClientData (templates, prospects, messages, sendFormData)
+    → Si error: SET_SESSION_EXPIRED, muestra banner rojo con botón "Ir al login"
+  → Si no existe: SET_SESSION_LOADING = false, LoginForm
+```
+
 ## Principios de Diseño
 1. **Todo pasa por API Routes** — el navegador nunca habla directo a Supabase
 2. **API Key como autenticación** — hash SHA256 en cada request
 3. **Sin modo demo** — error real si la API Key es inválida
 4. **Estado global** — React Context (store.tsx) mantiene el estado de la UI
 5. **Misma DB para desarrollo y producción** — los datos de prueba se borran manualmente
+6. **Sesión persistente** — AppProvider restaura sesión automáticamente al montar
+7. **Prospectos en BD** — import CSV reemplaza todos los prospectos del cliente en Supabase

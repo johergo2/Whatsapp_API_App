@@ -17,7 +17,7 @@ export default function TemplatesPage() {
     template_name: '',
     language_code: 'es_CO',
     num_textos: 4,
-    has_header: false,
+    header_type: 'none' as 'none' | 'image' | 'document' | 'video',
     num_footer: 0,
     footer_captions: ['', '', '', ''],
     message_example: '',
@@ -31,7 +31,7 @@ export default function TemplatesPage() {
       template_name: '',
       language_code: 'es_CO',
       num_textos: 4,
-      has_header: false,
+      header_type: 'none',
       num_footer: 0,
       footer_captions: ['', '', '', ''],
       message_example: '',
@@ -52,7 +52,7 @@ export default function TemplatesPage() {
       template_name: t.template_name,
       language_code: t.language_code,
       num_textos: t.num_textos,
-      has_header: t.has_header,
+      header_type: t.header_type,
       num_footer: t.num_footer,
       footer_captions: [...(t.footer_captions || []), '', '', '', ''].slice(0, 4),
       message_example: t.message_example,
@@ -70,7 +70,7 @@ export default function TemplatesPage() {
       template_name: form.template_name,
       language_code: form.language_code,
       num_textos: form.num_textos,
-      has_header: form.has_header,
+      header_type: form.header_type,
       num_footer: form.num_footer,
       footer_captions: form.footer_captions.slice(0, form.num_footer),
       message_example: form.message_example,
@@ -151,9 +151,9 @@ export default function TemplatesPage() {
                     <div className="tpl-meta">{t.template_name} · {t.language_code}</div>
                     {t.descripcion && <div className="tpl-meta" style={{ marginTop: 4, fontStyle: 'italic', fontSize: 12, color: '#667781' }}>{t.descripcion}</div>}
                     <div className="tpl-features">
-                      <span className={`tpl-feature ${t.has_header ? 'active' : 'inactive'}`}>
+                      <span className={`tpl-feature ${t.header_type !== 'none' ? 'active' : 'inactive'}`}>
                         <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><rect x="3" y="3" width="18" height="18" rx="2" /><circle cx="8.5" cy="8.5" r="1.5" /><polyline points="21 15 16 10 5 21" /></svg>
-                        Cabecera {t.has_header ? 'Sí' : 'No'}
+                        {t.header_type === 'image' ? 'Imagen' : t.header_type === 'document' ? 'Documento' : t.header_type === 'video' ? 'Video' : 'Sin adjunto'}
                       </span>
                       <span className="tpl-feature active">
                         <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M11 4H4a2 2 0 00-2 2v14a2 2 0 002 2h14a2 2 0 002-2v-7" /><path d="M18.5 2.5a2.121 2.121 0 013 3L12 15l-4 1 1-4 9.5-9.5z" /></svg>
@@ -218,10 +218,13 @@ export default function TemplatesPage() {
               </div>
               <div className="form-row">
                 <div className="form-group">
-                  <label>
-                    <input type="checkbox" checked={form.has_header} onChange={(e) => setForm({ ...form, has_header: e.target.checked })} />
-                    {' '}Tiene imagen de cabecera
-                  </label>
+                  <label>Adjunto en cabecera</label>
+                  <select value={form.header_type} onChange={(e) => setForm({ ...form, header_type: e.target.value as 'none' | 'image' | 'document' | 'video' })}>
+                    <option value="none">No tiene</option>
+                    <option value="image">Imagen</option>
+                    <option value="document">PDF / Documento</option>
+                    <option value="video">Video</option>
+                  </select>
                 </div>
                 <div className="form-group">
                   <label>Imágenes al final</label>

@@ -49,12 +49,19 @@ WhatsApp_API_App/
 │   │   │   ├── webhook/route.ts        # GET/POST - webhook Meta
 │   │   │   ├── outbound/route.ts       # POST - registrar salida manual
 │   │   │   └── chatwoot/               # Webhook Chatwoot
-│   │   ├── templates/page.tsx          # Gestión de plantillas
-│   │   ├── prospects/page.tsx          # Gestión de prospectos
+│   │   ├── templates/page.tsx          # Gestión de plantillas (con nomb_mio)
+│   │   ├── prospects/page.tsx          # Gestión de prospectos + envío
 │   │   ├── send/page.tsx               # Envío de mensajes
 │   │   ├── history/page.tsx            # Historial
 │   │   └── login/page.tsx              # Login
 │   ├── components/
+│   │   ├── SessionBanner.tsx           # Banner de sesión (loading/expired)
+│   │   ├── Dashboard.tsx               # Dashboard con info del plan y WhatsApp
+│   │   ├── LoginForm.tsx               # Formulario de login
+│   │   └── ui/
+│   │       ├── Sidebar.tsx
+│   │       ├── Card.tsx
+│   │       └── Modal.tsx
 │   ├── lib/
 │   │   ├── services.ts                 # Llamadas a API Routes
 │   │   ├── store.tsx                   # Estado global (React Context)
@@ -79,6 +86,13 @@ WhatsApp_API_App/
 - Sin modo demo — error real si la API Key es inválida
 - `sendFormData` se carga automáticamente al iniciar sesión (loadAllClientData)
 - `plantillas.id` cambiado de UUID a SERIAL
+- `nomb_mio` agregado como campo en plantillas (nombre del remitente)
+- `header_type` reemplazó a `has_header` (soporta: `none`, `image`, `document`, `video`)
+- `adjunto_cabecera` reemplazó a `header_img` en prospectos
+- Sesión se restaura automáticamente al refrescar la página (AppProvider)
+- Prospectos se persisten en BD al importar CSV (reemplazo completo por cliente)
+- Estado de envío visible completo y seleccionable en tabla de prospectos
+- Dashboard muestra número de WhatsApp (display_number) y Phone ID
 
 ## Usuario Objetivo
 - Administradores de negocio que envían mensajes masivos por WhatsApp

@@ -55,6 +55,8 @@ export interface EstadoMensaje {
   raw_payload?: any;
 }
 
+export type HeaderType = 'none' | 'image' | 'document' | 'video';
+
 export interface Plantilla {
   id: number;
   cliente_id?: number;
@@ -62,7 +64,7 @@ export interface Plantilla {
   template_name: string;
   language_code: string;
   num_textos: number;
-  has_header: boolean;
+  header_type: HeaderType;
   num_footer: number;
   footer_captions: string[];
   message_example: string;
@@ -75,7 +77,7 @@ export interface Prospecto {
   cliente_id?: number;
   nombre: string;
   telefono: string;
-  header_img: string;
+  adjunto_cabecera: string;
   footer_imgs: string[];
   captions: string[];
   estado: string;
@@ -89,7 +91,7 @@ export interface SendFormValues {
   texto4?: string;
   texto5?: string;
   texto6?: string;
-  header_img?: string;
+  adjunto_cabecera?: string;
   footer_url1?: string;
   footer_url2?: string;
   footer_url3?: string;

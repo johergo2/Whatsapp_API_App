@@ -59,12 +59,32 @@ export async function POST(req: NextRequest) {
 
     const components: any[] = [];
 
+    const normalizeUrl = (url: string) => {
+      let u = url.trim();
+      // If just a filename (no http), build the full Supabase Storage URL
+      if (!u.startsWith('http://') && !u.startsWith('https://')) {
+        const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL || process.env.SUPABASE_URL || '';
+        if (supabaseUrl) {
+          return `${supabaseUrl}/storage/v1/object/download/public/documentos/${encodeURIComponent(u)}`;
+        }
+        return u;
+      }
+      // Full URL with Supabase: replace /object/public/ with /object/download/public/
+      u = u.replace(/\/object\/public\//, '/object/download/public/');
+      // Encode spaces just in case
+      u = u.replace(/ /g, '%20');
+      return u;
+    };
+
     if (header_video_url && String(header_video_url).trim() !== '') {
-      components.push({ type: 'header', parameters: [{ type: 'video', video: { link: header_video_url } }] });
+      const link = normalizeUrl(String(header_video_url));
+      components.push({ type: 'header', parameters: [{ type: 'video', video: { link } }] });
     } else if (header_image_url && String(header_image_url).trim() !== '') {
-      components.push({ type: 'header', parameters: [{ type: 'image', image: { link: header_image_url } }] });
+      const link = normalizeUrl(String(header_image_url));
+      components.push({ type: 'header', parameters: [{ type: 'image', image: { link } }] });
     } else if (header_document_url && String(header_document_url).trim() !== '') {
-      components.push({ type: 'header', parameters: [{ type: 'document', document: { link: header_document_url, filename: `Cuenta_cobro_${to}.pdf` } }] });
+      const link = normalizeUrl(String(header_document_url));
+      components.push({ type: 'header', parameters: [{ type: 'document', document: { link, filename: `Cuenta_cobro_${to}.pdf` } }] });
     }
 
     components.push({ type: 'body', parameters: bodyParams });
@@ -81,6 +101,7 @@ export async function POST(req: NextRequest) {
     };
 
     // 4. Send to Meta
+    console.log('[send-message] payload:', JSON.stringify(payload, null, 2));
     const url = `https://graph.facebook.com/v18.0/${phoneNumberId}/messages`;
     const res = await fetch(url, {
       method: 'POST',

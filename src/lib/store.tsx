@@ -106,8 +106,8 @@ function appReducer(state: AppState, action: Action): AppState {
       };
     case 'UPDATE_PROSPECT_FIELD': {
       const p = { ...state.prospects[action.payload.index] };
-      if (action.payload.field === 'header_img') {
-        p.header_img = action.payload.value;
+      if (action.payload.field === 'adjunto_cabecera') {
+        p.adjunto_cabecera = action.payload.value;
       }
       return {
         ...state,

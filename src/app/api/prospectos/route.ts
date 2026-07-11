@@ -54,7 +54,7 @@ export async function POST(req: NextRequest) {
       cliente_id: clienteId,
       nombre: body.nombre,
       telefono: body.telefono,
-      header_img: body.header_img || null,
+      adjunto_cabecera: body.adjunto_cabecera || null,
       footer_imgs: body.footer_imgs || [],
       captions: body.captions || [],
       estado: body.estado || '',
@@ -86,7 +86,7 @@ export async function PUT(req: NextRequest) {
     .update({
       nombre: body.nombre,
       telefono: body.telefono,
-      header_img: body.header_img || null,
+      adjunto_cabecera: body.adjunto_cabecera || null,
       footer_imgs: body.footer_imgs || [],
       captions: body.captions || [],
       estado: body.estado || '',

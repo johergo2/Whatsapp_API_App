@@ -18,11 +18,14 @@ El esquema completo está definido en `supabase_migration.sql` en la raíz del p
 
 | Tabla | Descripción |
 |-------|-------------|
-| `plantillas` | Plantillas de mensaje (nombre interno, nombre Meta, textos, imágenes) |
-| `prospectos` | Destinatarios con URLs personalizadas por plantilla |
+| `plantillas` | Plantillas de mensaje (nombre interno, nombre Meta, textos, imágenes, `header_type`, `nomb_mio` del remitente) |
+| `prospectos` | Destinatarios con `adjunto_cabecera` (URL del PDF/imagen/video), URLs personalizadas por plantilla y `estado` de envío |
 
-### Tablas Eliminadas
-- `send_form_data` — eliminada en la migración (la persistencia de formulario se maneja en el store)
+### Tablas Adicionales
+
+| Tabla | Descripción |
+|-------|-------------|
+| `send_form_data` | Persistencia del formulario de envío (valores por plantilla) |
 
 ### Seed Data
 El cliente #1 "Productos & Asesorias" se inserta con:
