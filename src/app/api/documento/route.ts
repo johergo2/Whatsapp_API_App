@@ -1,5 +1,4 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { getServerSupabase } from '@/lib/supabase';
 
 export async function GET(req: NextRequest) {
   try {
@@ -8,17 +7,20 @@ export async function GET(req: NextRequest) {
       return NextResponse.json({ error: 'Falta el parámetro archivo' }, { status: 400 });
     }
 
-    const supabase = getServerSupabase();
-    const { data, error } = await supabase.storage
-      .from('documentos')
-      .download(archivo);
+    const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL || process.env.SUPABASE_URL || '';
+    if (!supabaseUrl) {
+      return NextResponse.json({ error: 'SUPABASE_URL no configurado' }, { status: 500 });
+    }
 
-    if (error || !data) {
-      console.error('[documento] Error downloading:', error?.message || 'No data');
+    const publicUrl = `${supabaseUrl}/storage/v1/object/public/documentos/${encodeURIComponent(archivo)}`;
+    const res = await fetch(publicUrl);
+
+    if (!res.ok) {
+      console.error('[documento] Error fetching:', res.status, res.statusText);
       return NextResponse.json({ error: 'Archivo no encontrado' }, { status: 404 });
     }
 
-    const arrayBuffer = await data.arrayBuffer();
+    const arrayBuffer = await res.arrayBuffer();
     return new NextResponse(arrayBuffer, {
       status: 200,
       headers: {
