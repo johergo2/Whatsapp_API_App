@@ -50,13 +50,12 @@ export function Sidebar() {
         <div className="badge" id="badge-msg-count">
           {state.prospects.filter((p) => p.estado).length} / {state.prospects.length} mensajes
         </div>
-        <div style={{ position: 'relative', width: '40%', margin: '180px auto 0', display: 'block' }}>
+        <div style={{ textAlign: 'center', marginTop: '180px' }}>
           <Image
             src="/Logo_P&A_transp.png"
             alt=""
-            fill
-            sizes="40%"
-            priority
+            width={80}
+            height={79}
           />
         </div>
       </div>
