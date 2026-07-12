@@ -33,7 +33,7 @@ export default function Home() {
             <span style={{ fontSize: 14, color: '#667781' }}>
               {state.cliente.plan} — {state.cliente.requests_max - state.cliente.requests_usadas} disponibles
             </span>
-            <button className="btn btn-outline btn-sm" style={{ marginLeft: 'auto' }} onClick={() => {
+            <button className="btn btn-outline btn-sm" style={{ marginLeft: 'auto', background: '#075E54', color: '#fff', borderColor: '#075E54', fontWeight: 700 }} onClick={() => {
               if (typeof window !== 'undefined') {
                 localStorage.removeItem('mercurio_api_key');
                 dispatch({ type: 'LOGOUT' });
