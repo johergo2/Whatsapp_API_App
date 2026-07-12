@@ -3,51 +3,66 @@
 import { useState } from 'react';
 import { useApp } from '@/lib/store';
 import { useRouter } from 'next/navigation';
+import Link from 'next/link';
 import { loadAllClientData } from '@/lib/services';
 
 export function LoginForm() {
   const { dispatch } = useApp();
   const router = useRouter();
-  const [apiKey, setApiKey] = useState('');
+  const [usuario, setUsuario] = useState('');
+  const [password, setPassword] = useState('');
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
-  const [showKey, setShowKey] = useState(false);
-
-  async function loadData() {
-    try {
-      const data = await loadAllClientData();
-      dispatch({ type: 'SET_ALL_DATA', payload: data });
-    } catch {
-    }
-  }
+  const [showPw, setShowPw] = useState(false);
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
-    if (!apiKey.trim()) return;
+    if (!usuario.trim() || !password) return;
     setLoading(true);
     setError('');
 
     try {
-      const res = await fetch('/api/cliente', {
-        headers: { 'X-API-Key': apiKey.trim() },
+      const res = await fetch('/api/auth/login', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ nombre: usuario.trim(), password }),
       });
 
+      let body: any;
+      const contentType = res.headers.get('content-type') || '';
+      if (contentType.includes('application/json')) {
+        body = await res.json();
+      } else {
+        const text = await res.text();
+        console.error('Respuesta no JSON:', res.status, text.slice(0, 200));
+        throw new Error(`Respuesta inesperada del servidor (${res.status})`);
+      }
+
       if (!res.ok) {
-        setError('API Key inválida');
+        setError(body.detail || 'Error al iniciar sesión');
         setLoading(false);
         return;
       }
 
-      const data = await res.json();
-      dispatch({ type: 'SET_CLIENTE', payload: data });
-      dispatch({ type: 'SET_DEMO_MODE', payload: false });
-      localStorage.setItem('mercurio_api_key', apiKey.trim());
+      dispatch({ type: 'SET_USER', payload: body });
+      localStorage.setItem('mercurio_user', JSON.stringify(body));
 
-      if (data.id) await loadData();
+      const resCliente = await fetch(`/api/cliente?cliente_id=${body.cliente_id}`);
+      if (resCliente.ok) {
+        const cliente = await resCliente.json();
+        dispatch({ type: 'SET_CLIENTE', payload: cliente });
+        dispatch({ type: 'SET_DEMO_MODE', payload: false });
+      }
+
+      try {
+        const data = await loadAllClientData();
+        dispatch({ type: 'SET_ALL_DATA', payload: data });
+      } catch {}
 
       router.push('/');
-    } catch {
-      setError('Error de conexión con el servidor');
+    } catch (e: any) {
+      console.error('Login error:', e);
+      setError(e.message || 'Error de conexión con el servidor');
     } finally {
       setLoading(false);
     }
@@ -66,23 +81,36 @@ export function LoginForm() {
         </div>
         <form className="login-form" onSubmit={handleSubmit}>
           <div className="form-group">
-            <label htmlFor="api-key">API Key</label>
+            <label htmlFor="usuario">Usuario</label>
+            <input
+              type="text"
+              id="usuario"
+              placeholder="Nombre de usuario"
+              value={usuario}
+              onChange={(e) => setUsuario(e.target.value)}
+              required
+              autoComplete="username"
+            />
+          </div>
+          <div className="form-group">
+            <label htmlFor="password">Contraseña</label>
             <div className="input-wrapper">
               <input
-                type={showKey ? 'text' : 'password'}
-                id="api-key"
-                placeholder="Ingrese su API Key"
-                value={apiKey}
-                onChange={(e) => setApiKey(e.target.value)}
+                type={showPw ? 'text' : 'password'}
+                id="password"
+                placeholder="Contraseña"
+                value={password}
+                onChange={(e) => setPassword(e.target.value)}
                 required
+                autoComplete="current-password"
               />
               <button
                 type="button"
                 className="toggle-password"
-                onClick={() => setShowKey(!showKey)}
+                onClick={() => setShowPw(!showPw)}
               >
                 <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                  {showKey ? (
+                  {showPw ? (
                     <path d="M17.94 17.94A10.07 10.07 0 0 1 12 20c-7 0-11-8-11-8a18.45 18.45 0 0 1 5.06-5.94M9.9 4.24A9.12 9.12 0 0 1 12 4c7 0 11 8 11 8a18.5 18.5 0 0 1-2.16 3.19M1 1l23 23" />
                   ) : (
                     <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z" />
@@ -94,19 +122,24 @@ export function LoginForm() {
           </div>
           <button type="submit" className="btn btn-primary btn-full" disabled={loading}>
             {loading ? (
-              <span className="btn-loader" style={{ display: 'inline-flex' }}>
+              <span style={{ display: 'inline-flex', alignItems: 'center', gap: 8 }}>
                 <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
                   <circle cx="12" cy="12" r="10" strokeDasharray="31.4 31.4" strokeLinecap="round">
                     <animateTransform attributeName="transform" type="rotate" from="0 12 12" to="360 12 12" dur="1s" repeatCount="indefinite" />
                   </circle>
                 </svg>
-                Validando...
+                Ingresando...
               </span>
             ) : (
-              <span className="btn-text">Ingresar</span>
+              'Ingresar'
             )}
           </button>
         </form>
+        <div className="login-footer" style={{ marginTop: 16, textAlign: 'center' }}>
+          <Link href="/register" style={{ color: '#075E54', fontSize: 14, textDecoration: 'underline' }}>
+            ¿No tienes cuenta? Regístrate
+          </Link>
+        </div>
         {error && <p className="login-error">{error}</p>}
       </div>
     </div>

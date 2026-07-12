@@ -1,33 +1,20 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { getServerSupabase } from '@/lib/supabase';
+import { getClienteId } from '@/lib/auth-utils';
 
 export async function GET(req: NextRequest) {
-  const apiKey = req.headers.get('X-API-Key');
-  if (!apiKey) {
-    return NextResponse.json({ detail: 'Debe enviar el header X-API-Key' }, { status: 401 });
+  const clienteId = getClienteId(req);
+  if (!clienteId) {
+    return NextResponse.json({ detail: 'Debe enviar el header X-Cliente-Id' }, { status: 401 });
   }
 
   try {
     const supabase = getServerSupabase();
 
-    // Get client by API key
-    const crypto = await import('crypto');
-    const apiKeyHash = crypto.createHash('sha256').update(apiKey).digest('hex');
-
-    const { data: clientData, error: clientError } = await supabase
-      .from('clientes_whatsapp')
-      .select('id')
-      .eq('api_key', apiKeyHash)
-      .single();
-
-    if (clientError || !clientData) {
-      return NextResponse.json({ detail: 'API Key inválida' }, { status: 401 });
-    }
-
     const { data, error } = await supabase
       .from('variables_whatsapp')
       .select('variable, valor')
-      .eq('cliente_id', clientData.id)
+      .eq('cliente_id', clienteId)
       .order('variable');
 
     if (error) throw error;

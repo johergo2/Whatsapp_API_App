@@ -68,7 +68,7 @@ export default function SendPage() {
               <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><line x1="3" y1="12" x2="21" y2="12" /><line x1="3" y1="6" x2="21" y2="6" /><line x1="3" y1="18" x2="21" y2="18" /></svg>
             </button>
             <span style={{ fontSize: 14, color: '#667781' }}>Enviar mensajes</span>
-            <button className="btn btn-outline btn-sm" style={{ marginLeft: 'auto', background: '#075E54', color: '#fff', borderColor: '#075E54' }} onClick={() => { localStorage.removeItem('mercurio_api_key'); dispatch({ type: 'LOGOUT' }); window.location.href = '/login'; }}>Salir</button>
+            <button className="btn btn-outline btn-sm" style={{ marginLeft: 'auto', background: '#075E54', color: '#fff', borderColor: '#075E54' }} onClick={() => { localStorage.removeItem('mercurio_user'); dispatch({ type: 'LOGOUT' }); window.location.href = '/'; }}>Salir</button>
           </div>
           <section className="section active" style={{ position: 'relative', marginTop: -32 }}>
             <img src="/Productosasesorias_transp.png" alt="" style={{ position: 'absolute', top: 24, right: 0, width: 180, height: 'auto', zIndex: 0 }} />
@@ -126,7 +126,7 @@ export default function SendPage() {
                             <label>Texto {i + 1}</label>
                             <input
                               type="text"
-                              value={form[`texto${i + 1}`] || saved[`texto${i + 1}`] || ''}
+                              value={form[`texto${i + 1}`] ?? saved[`texto${i + 1}`] ?? ''}
                               onChange={(e) => updateField(`texto${i + 1}`, e.target.value)}
                               placeholder={`Valor para texto${i + 1}`}
                               required
@@ -144,7 +144,7 @@ export default function SendPage() {
                         <label>URL por defecto</label>
                         <input
                           type="url"
-                          value={form.adjunto_cabecera || saved.adjunto_cabecera || ''}
+                          value={form.adjunto_cabecera ?? saved.adjunto_cabecera ?? ''}
                           onChange={(e) => updateField('adjunto_cabecera', e.target.value)}
                           placeholder="https://..."
                         />
@@ -161,7 +161,7 @@ export default function SendPage() {
                             <label>URL imagen {i + 1}</label>
                             <input
                               type="url"
-                              value={form[`footer_url${i + 1}`] || saved[`footer_url${i + 1}`] || ''}
+                              value={form[`footer_url${i + 1}`] ?? saved[`footer_url${i + 1}`] ?? ''}
                               onChange={(e) => updateField(`footer_url${i + 1}`, e.target.value)}
                               placeholder="https://..."
                             />
@@ -170,7 +170,7 @@ export default function SendPage() {
                             <label>Texto imagen {i + 1} (opcional)</label>
                             <input
                               type="text"
-                              value={form[`caption${i + 1}`] || saved[`caption${i + 1}`] || tpl.footer_captions?.[i] || ''}
+                              value={form[`caption${i + 1}`] ?? saved[`caption${i + 1}`] ?? tpl.footer_captions?.[i] ?? ''}
                               onChange={(e) => updateField(`caption${i + 1}`, e.target.value)}
                               placeholder={`Texto debajo de la imagen ${i + 1}`}
                             />

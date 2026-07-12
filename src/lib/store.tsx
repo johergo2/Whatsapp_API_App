@@ -1,9 +1,10 @@
 'use client';
 
 import { createContext, useContext, useReducer, ReactNode, Dispatch, useEffect } from 'react';
-import type { Cliente, Plantilla, Prospecto, Mensaje, SendFormValues } from '@/types';
+import type { Cliente, Plantilla, Prospecto, Mensaje, SendFormValues, Usuario } from '@/types';
 
 interface AppState {
+  user: Usuario | null;
   cliente: Cliente | null;
   templates: Plantilla[];
   prospects: Prospecto[];
@@ -25,6 +26,7 @@ interface AllData {
 }
 
 type Action =
+  | { type: 'SET_USER'; payload: Usuario | null }
   | { type: 'SET_CLIENTE'; payload: Cliente | null }
   | { type: 'SET_ALL_DATA'; payload: AllData }
   | { type: 'SET_TEMPLATES'; payload: Plantilla[] }
@@ -47,6 +49,7 @@ type Action =
   | { type: 'SET_SESSION_LOADING'; payload: boolean };
 
 const initialState: AppState = {
+  user: null,
   cliente: null,
   templates: [],
   prospects: [],
@@ -62,6 +65,8 @@ const initialState: AppState = {
 
 function appReducer(state: AppState, action: Action): AppState {
   switch (action.type) {
+    case 'SET_USER':
+      return { ...state, user: action.payload, sessionLoading: false };
     case 'SET_CLIENTE':
       return { ...state, cliente: action.payload };
     case 'SET_ALL_DATA':
@@ -135,6 +140,7 @@ function appReducer(state: AppState, action: Action): AppState {
     case 'SET_DEMO_MODE':
       return { ...state, demoMode: action.payload };
     case 'LOGOUT':
+      localStorage.removeItem('mercurio_user');
       return { ...initialState, sessionLoading: false };
     case 'SET_SESSION_EXPIRED':
       return { ...state, sessionExpired: action.payload };
@@ -154,24 +160,32 @@ export function AppProvider({ children }: { children: ReactNode }) {
   const [state, dispatch] = useReducer(appReducer, initialState);
 
   useEffect(() => {
-    const key = typeof window !== 'undefined' ? localStorage.getItem('mercurio_api_key') : null;
-    if (!key) {
+    const raw = typeof window !== 'undefined' ? localStorage.getItem('mercurio_user') : null;
+    if (!raw) {
       dispatch({ type: 'SET_SESSION_LOADING', payload: false });
       return;
     }
 
-    fetch('/api/cliente', { headers: { 'X-API-Key': key } })
+    let user: Usuario;
+    try { user = JSON.parse(raw); } catch {
+      localStorage.removeItem('mercurio_user');
+      dispatch({ type: 'SET_SESSION_LOADING', payload: false });
+      return;
+    }
+
+    dispatch({ type: 'SET_USER', payload: user });
+
+    fetch(`/api/cliente?cliente_id=${user.cliente_id}`)
       .then(async (res) => {
         if (!res.ok) throw new Error('invalid');
         const cliente = await res.json();
         dispatch({ type: 'SET_CLIENTE', payload: cliente });
-        dispatch({ type: 'SET_DEMO_MODE', payload: false });
 
         const [templates, prospects, messages, sendFormData] = await Promise.all([
-          fetch('/api/plantillas', { headers: { 'X-API-Key': key } }).then(r => r.json()).catch(() => []),
-          fetch('/api/prospectos', { headers: { 'X-API-Key': key } }).then(r => r.json()).catch(() => []),
-          fetch('/api/mensajes', { headers: { 'X-API-Key': key } }).then(r => r.json()).catch(() => []),
-          fetch('/api/send-form-data', { headers: { 'X-API-Key': key } }).then(r => r.json()).then(rows => {
+          fetch('/api/plantillas', { headers: { 'X-Cliente-Id': String(user.cliente_id) } }).then(r => r.json()).catch(() => []),
+          fetch('/api/prospectos', { headers: { 'X-Cliente-Id': String(user.cliente_id) } }).then(r => r.json()).catch(() => []),
+          fetch('/api/mensajes', { headers: { 'X-Cliente-Id': String(user.cliente_id) } }).then(r => r.json()).catch(() => []),
+          fetch('/api/send-form-data', { headers: { 'X-Cliente-Id': String(user.cliente_id) } }).then(r => r.json()).then(rows => {
             const map: Record<string, SendFormValues> = {};
             for (const row of rows as Array<{ plantilla_id: number; values_json: Record<string, string> }>) {
               map[String(row.plantilla_id)] = row.values_json as SendFormValues;
@@ -183,7 +197,7 @@ export function AppProvider({ children }: { children: ReactNode }) {
         dispatch({ type: 'SET_ALL_DATA', payload: { templates, prospects, messages, sendFormData } });
       })
       .catch(() => {
-        localStorage.removeItem('mercurio_api_key');
+        localStorage.removeItem('mercurio_user');
         dispatch({ type: 'SET_SESSION_EXPIRED', payload: true });
       })
       .finally(() => {

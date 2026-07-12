@@ -16,11 +16,11 @@ export function SessionBanner() {
   if (state.sessionExpired) {
     return (
       <div style={{ padding: '12px 24px', background: '#FFEBEE', color: '#C62828', textAlign: 'center', fontSize: 14 }}>
-        Sesión caducada o API Key inválida.{' '}
+        Sesión caducada o usuario inválido.{' '}
         <button
           className="btn btn-outline btn-sm"
           style={{ marginLeft: 8 }}
-          onClick={() => { localStorage.removeItem('mercurio_api_key'); window.location.href = '/login'; }}
+          onClick={() => { localStorage.removeItem('mercurio_user'); window.location.href = '/'; }}
         >
           Ir al login
         </button>

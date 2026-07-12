@@ -2,9 +2,14 @@
 
 import type { Plantilla, Prospecto, Mensaje, SendFormValues } from '@/types';
 
-function apiKey() {
+function clienteId() {
   if (typeof window === 'undefined') return '';
-  return localStorage.getItem('mercurio_api_key') || '';
+  try {
+    const raw = localStorage.getItem('mercurio_user');
+    if (!raw) return '';
+    const user = JSON.parse(raw);
+    return String(user.cliente_id || '');
+  } catch { return ''; }
 }
 
 async function apiFetch(path: string, options?: RequestInit) {
@@ -12,7 +17,7 @@ async function apiFetch(path: string, options?: RequestInit) {
     ...options,
     headers: {
       'Content-Type': 'application/json',
-      'X-API-Key': apiKey(),
+      'X-Cliente-Id': clienteId(),
       ...options?.headers,
     },
   });

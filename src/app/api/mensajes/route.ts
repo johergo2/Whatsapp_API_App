@@ -1,29 +1,11 @@
 import { NextRequest, NextResponse } from 'next/server';
-import crypto from 'crypto';
 import { getServerSupabase } from '@/lib/supabase';
-
-function hashApiKey(apiKey: string): string {
-  return crypto.createHash('sha256').update(apiKey).digest('hex');
-}
-
-async function validateClient(req: NextRequest) {
-  const apiKey = req.headers.get('X-API-Key');
-  if (!apiKey) return null;
-
-  const supabase = getServerSupabase();
-  const { data } = await supabase
-    .from('clientes_whatsapp')
-    .select('id')
-    .eq('api_key', hashApiKey(apiKey))
-    .single();
-
-  return data?.id || null;
-}
+import { getClienteId } from '@/lib/auth-utils';
 
 export async function GET(req: NextRequest) {
-  const clienteId = await validateClient(req);
+  const clienteId = getClienteId(req);
   if (!clienteId) {
-    return NextResponse.json({ detail: 'API Key inválida' }, { status: 401 });
+    return NextResponse.json({ detail: 'Debe enviar el header X-Cliente-Id' }, { status: 401 });
   }
 
   const supabase = getServerSupabase();

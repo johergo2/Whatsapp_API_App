@@ -127,7 +127,7 @@ export default function TemplatesPage() {
               <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><line x1="3" y1="12" x2="21" y2="12" /><line x1="3" y1="6" x2="21" y2="6" /><line x1="3" y1="18" x2="21" y2="18" /></svg>
             </button>
             <span style={{ fontSize: 14, color: '#667781' }}>Plantillas</span>
-            <button className="btn btn-outline btn-sm" style={{ marginLeft: 'auto', background: '#075E54', color: '#fff', borderColor: '#075E54' }} onClick={() => { localStorage.removeItem('mercurio_api_key'); dispatch({ type: 'LOGOUT' }); window.location.href = '/login'; }}>Salir</button>
+            <button className="btn btn-outline btn-sm" style={{ marginLeft: 'auto', background: '#075E54', color: '#fff', borderColor: '#075E54' }} onClick={() => { localStorage.removeItem('mercurio_user'); dispatch({ type: 'LOGOUT' }); window.location.href = '/'; }}>Salir</button>
           </div>
           <section className="section active" style={{ position: 'relative', marginTop: -32 }}>
             <img src="/Productosasesorias_transp.png" alt="" style={{ position: 'absolute', top: 24, right: 0, width: 180, height: 'auto', zIndex: 0 }} />
@@ -172,11 +172,6 @@ export default function TemplatesPage() {
                         {t.num_footer > 0 ? `${t.num_footer} imág. final` : 'Sin imág. final'}
                       </span>
                     </div>
-                    {t.footer_captions && t.footer_captions.filter(Boolean).length > 0 && (
-                      <div className="tpl-meta" style={{ marginTop: 4 }}>
-                        ✏️ {t.footer_captions.filter(Boolean).map((c, i) => `Img${i + 1}: ${c}`).join(' | ')}
-                      </div>
-                    )}
                     {t.message_example && (
                       <div className="tpl-meta" style={{ marginTop: 8, padding: 8, background: '#F9F9F9', borderRadius: 6, fontStyle: 'italic', fontSize: 12, whiteSpace: 'pre-wrap' }}>
                         {t.message_example}
@@ -247,22 +242,7 @@ export default function TemplatesPage() {
               </div>
               {form.num_footer > 0 && (
                 <div style={{ marginTop: 12 }}>
-                  <h4>Texto para cada imagen</h4>
-                  {Array.from({ length: form.num_footer }).map((_, i) => (
-                    <div className="form-group" key={i}>
-                      <label>Texto para imagen {i + 1}</label>
-                      <input
-                        type="text"
-                        value={form.footer_captions[i] || ''}
-                        onChange={(e) => {
-                          const captions = [...form.footer_captions];
-                          captions[i] = e.target.value;
-                          setForm({ ...form, footer_captions: captions });
-                        }}
-                        placeholder={`Texto opcional para imagen ${i + 1}`}
-                      />
-                    </div>
-                  ))}
+                  <p style={{ fontSize: 13, color: '#667781' }}>Los textos para cada imagen se configuran en "Configurar plantillas"</p>
                 </div>
               )}
               <div className="form-group">

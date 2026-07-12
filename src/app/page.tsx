@@ -8,8 +8,18 @@ import { Dashboard } from '@/components/Dashboard';
 export default function Home() {
   const { state, dispatch } = useApp();
 
-  if (!state.cliente) {
+  if (!state.user) {
     return <LoginForm />;
+  }
+
+  if (state.sessionLoading) {
+    return (
+      <div id="login-screen" className="screen active">
+        <div className="login-card" style={{ textAlign: 'center', padding: '3rem' }}>
+          <p>Cargando sesión...</p>
+        </div>
+      </div>
+    );
   }
 
   return (
@@ -31,17 +41,20 @@ export default function Home() {
               </svg>
             </button>
             <span style={{ fontSize: 14, color: '#667781' }}>
-              {state.cliente.plan} — {state.cliente.requests_max - state.cliente.requests_usadas} disponibles
+              {state.cliente?.plan || 'Sin plan'} — {state.cliente ? state.cliente.requests_max - state.cliente.requests_usadas : 0} disponibles
             </span>
-            <button className="btn btn-outline btn-sm" style={{ marginLeft: 'auto', background: '#075E54', color: '#fff', borderColor: '#075E54', fontWeight: 700 }} onClick={() => {
-              if (typeof window !== 'undefined') {
-                localStorage.removeItem('mercurio_api_key');
-                dispatch({ type: 'LOGOUT' });
-                window.location.href = '/login';
-              }
-            }}>
-              Salir
-            </button>
+            <span style={{ marginLeft: 'auto', display: 'flex', alignItems: 'center', gap: 8 }}>
+              <span style={{ fontSize: 13, color: '#667781' }}>{state.user.nombre}</span>
+              <button className="btn btn-outline btn-sm" style={{ background: '#075E54', color: '#fff', borderColor: '#075E54', fontWeight: 700 }} onClick={() => {
+                if (typeof window !== 'undefined') {
+                  localStorage.removeItem('mercurio_user');
+                  dispatch({ type: 'LOGOUT' });
+                  window.location.href = '/';
+                }
+              }}>
+                Salir
+              </button>
+            </span>
           </div>
           <Dashboard />
         </main>

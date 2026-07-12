@@ -101,3 +101,12 @@ export interface SendFormValues {
   caption3?: string;
   caption4?: string;
 }
+
+export interface Usuario {
+  id: number;
+  nombre: string;
+  email?: string;
+  rol: 'superadmin' | 'usuario';
+  activo: boolean;
+  cliente_id: number;
+}
