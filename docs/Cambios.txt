@@ -1,90 +1,53 @@
-=== MERCURIO SEND — REGISTRO DE CAMBIOS ===
+=== MERCURIO SOFTWARE — REGISTRO DE CAMBIOS ===
 
-Fecha: 9/07/2026
-
-============================================================
-MIGRACIÓN COMPLETA A NEXT.JS 14 + API ROUTES
-============================================================
-
-- Prototipo vanilla HTML/CSS/JS movido a legacy/
-- App migrada a Next.js 14 con TypeScript
-- API Routes implementadas para toda la lógica:
-  * GET /api/cliente — validación API Key con SHA256
-  * GET /api/variables — variables de configuración
-  * GET|POST|PUT|DELETE /api/plantillas — CRUD plantillas
-  * GET|POST|PUT|DELETE /api/prospectos — CRUD prospectos
-  * GET /api/mensajes — historial de mensajes
-  * POST /api/send-message — envío de templates
-  * POST /api/send-media — envío de imágenes/video
-  * GET|POST /api/webhook — webhook Meta
-  * POST /api/outbound — registro manual de salida
-  * POST /api/chatwoot/webhook — webhook Chatwoot
-  * GET|POST /api/send-form-data — persistencia de formulario
+Fecha: 12/07/2026
 
 ============================================================
-ARQUITECTURA DE COMUNICACIÓN
+BRANDING CORPORATIVO Y MEJORAS UI (12/07/2026)
 ============================================================
 
-Cambio fundamental: toda comunicación ahora pasa por API Routes.
-El navegador NO habla directo a Supabase SDK.
-
-Anterior:
-  Navegador → Supabase SDK (directo a PostgreSQL via REST)
-
-Actual:
-  Navegador → API Route (Vercel/localhost) → Supabase
-
-============================================================
-BASE DE DATOS
-============================================================
-
-- Migración completa al esquema original de FastAPI
-- Tablas: clientes_whatsapp, contactos_whatsapp, mensajes_whatsapp,
-  estado_mensajes_whatsapp, variables_whatsapp, plantillas, prospectos
-- send_form_data agregada posteriormente para persistir formulario
-- Seed data para cliente #1 Productos & Asesorias
-
-============================================================
-ELIMINACIÓN DE MODO DEMO
-============================================================
-
-- Eliminado el modo demo que permitía ingresar con cualquier API Key
-- Si la API Key no es válida, muestra error "API Key inválida"
-- Sin banner de demo en la UI
+- Nombre del proyecto cambiado de "Mercurio Send" a "Mercurio Software"
+- Icono WhatsApp (SVG de Wikipedia Commons) agregado como:
+  * Favicon (public/favicon.svg)
+  * Logo del sidebar (menú vertical izquierdo)
+  * Logo central en todas las pantallas principales
+  * Logo en pantalla de login
+- Color del icono: #075E54 (verde oscuro) con borde blanco grueso (strokeWidth: 16)
+- Texto "Mercurio Software" (#075E54, fontSize: 22, fontWeight: 700) debajo del icono
+  en Dashboard, Templates, Prospects, Send e History
+- Logo Productosasesorias_transp.png en esquina superior derecha de todas las
+  pantallas (width: 180, top: 24)
+- Logo Logo_P&A_transp.png en el footer del sidebar (width: 40%, margin-top: 180px)
+- Sidebar: icono a la derecha del texto, centrado con flexbox, borde verde
+  (stroke: #075E54, strokeWidth: 14), teléfono escalado al 70%
+- Botón "Salir": fondo #075E54, texto blanco bold, presente en las 5 pantallas
+- Título de página (metadata): "Mercurio Software"
+- Título del login: "Mercurio Software"
 
 ============================================================
-AMBIENTES
+WEBHOOK META CONFIRMADO FUNCIONAL (12/07/2026)
 ============================================================
 
-- Desarrollo local: http://localhost:3002 (npm run dev)
-- Producción: https://whatsapp-api-app-silk.vercel.app
-- Ambos comparten la misma base de datos Supabase
+- Webhook URL: https://whatsapp-api-app-silk.vercel.app/api/webhook
+- Verify Token: johergo21970090516780919
+- Endpoint configurado en Meta Developers en:
+  App → WhatsApp → Configuración → Webhook (NO en App → Webhook genérico)
+- Campo suscrito: "messages" (obligatorio para inbound + status updates)
+- El webhook procesa:
+  * Status updates: actualiza mensajes_whatsapp.estado e inserta en
+    estado_mensajes_whatsapp (mensaje_id, wamid, estado, error, raw_payload)
+  * Mensajes entrantes: guarda en mensajes_whatsapp (direction: 'inbound')
+    y sincroniza con Chatwoot si está configurado
+- Verificado con curl: GET retorna challenge, POST procesa status update
+- Meta ahora envía eventos correctamente al endpoint
 
 ============================================================
-MEJORAS EN PLANTILLAS Y PROSPECTOS (10/07/2026)
+PRÓXIMOS PASOS (PLANEADO)
 ============================================================
 
-- has_header (booleano) reemplazado por header_type con valores:
-  none, image, document, video
-- El checkbox "Tiene adjunto en la cabecera" ahora es un select
-  con las 4 opciones
-- header_img en prospectos reemplazado por adjunto_cabecera
-- La columna "URL Cabecera" en tabla de prospectos ahora es
-  "Adjunto Cabecera"
-- CSV import soporta columna "adjunto cabecera" con nombre de
-  archivo o URL directa
-- API send-message ya soporta header_document_url y
-  header_video_url para adjuntos tipo documento y video
-- El envío selecciona automáticamente el campo correcto según
-  header_type de la plantilla
-- Todo listo para usar URLs de Supabase Storage para PDFs
-
-============================================================
-DOCUMENTACIÓN
-============================================================
-
-- PROJECT_CONTEXT.md actualizado con stack y ambientes
-- ARCHITECTURE_MVP.md actualizado con diagrama y flujos
-- API_SPEC.md actualizado con todos los endpoints reales
-- DATABASE_SCHEMA.md actualizado con esquema actual
-- TODO_MVP.md pendiente de actualizar
+- Desarrollo de chat multiagente integrado (reemplazo de Chatwoot)
+  * Vista de conversaciones agrupadas por número
+  * Input para responder desde la app
+  * Asignación de agentes a conversaciones
+  * Reasignación automática al retirar un agente
+  * Polling o WebSockets para mensajes en tiempo real

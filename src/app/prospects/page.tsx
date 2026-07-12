@@ -148,7 +148,10 @@ function openNew() {
       if (lines.length === 0) return;
       const first = lines[0].toLowerCase();
       const hasHeader = first.includes('nombre') || first.includes('name') || first.includes('nomb');
-      const rawHeaders = hasHeader ? lines[0].split(',').map(s => s.trim().toLowerCase().replace(/^"|"$/g, '')) : [];
+      const commaCount = (lines[0].match(/,/g) || []).length;
+      const semicolonCount = (lines[0].match(/;/g) || []).length;
+      const delim = semicolonCount > commaCount ? ';' : ',';
+      const rawHeaders = hasHeader ? lines[0].split(delim).map(s => s.trim().toLowerCase().replace(/^"|"$/g, '')) : [];
       const adjuntoIdx = rawHeaders.findIndex(h => h.replace(/_/g, ' ').includes('adjunto') || h.replace(/_/g, ' ').includes('cabecera'));
       const imgIndices = [1, 2, 3, 4].map(i => {
         const idx = rawHeaders.indexOf(`imagen_${i}`);
@@ -157,19 +160,23 @@ function openNew() {
       const dataLines = hasHeader ? lines.slice(1) : lines;
       const prospects: Omit<Prospecto, 'id'>[] = [];
       const rowErrors: string[] = [];
+      const savedDefaults = tpl ? (state.sendFormData[String(tpl.id)] || {}) : {};
       dataLines.forEach((line, rowIdx) => {
-        const parts = line.split(',').map((s) => s.trim().replace(/^"|"$/g, ''));
+        const parts = line.split(delim).map((s) => s.trim().replace(/^"|"$/g, ''));
         if (parts.length >= 2 && parts[0] && parts[1]) {
           const footer_imgs: string[] = [];
           for (let i = 0; i < 4; i++) {
-            if (imgIndices[i] >= 0 && parts[imgIndices[i]]) {
-              footer_imgs.push(parts[imgIndices[i]]);
-            } else {
-              break;
+            if (imgIndices[i] >= 0) {
+              footer_imgs.push(parts[imgIndices[i]] || '');
             }
           }
           if (tpl && tpl.num_footer > 0) {
-            const filled = footer_imgs.length;
+            let filled = 0;
+            for (let i = 0; i < tpl.num_footer; i++) {
+              const csvVal = footer_imgs[i] || '';
+              const defaultVal = savedDefaults[`footer_url${i + 1}`] || '';
+              if (csvVal || defaultVal) filled++;
+            }
             if (filled < tpl.num_footer) {
               rowErrors.push(`Fila ${rowIdx + 2} (${parts[0]}): tiene ${filled} imagen(es), la plantilla requiere ${tpl.num_footer}`);
             }
