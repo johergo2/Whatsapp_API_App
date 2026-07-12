@@ -7,6 +7,7 @@ import { Card } from '@/components/ui/Card';
 import { Modal } from '@/components/ui/Modal';
 import { addProspect, updateProspect, deleteProspectFromDb, replaceAllProspects } from '@/lib/services';
 import type { Plantilla, Prospecto } from '@/types';
+import Image from 'next/image';
 
 function renderStatusCell(estado: string) {
   if (!estado) return '<span class="status-badge pending">Pendiente</span>';
@@ -382,7 +383,13 @@ function openNew() {
             <button className="btn btn-outline btn-sm" style={{ marginLeft: 'auto', background: '#075E54', color: '#fff', borderColor: '#075E54' }} onClick={() => { localStorage.removeItem('mercurio_user'); dispatch({ type: 'LOGOUT' }); window.location.href = '/'; }}>Salir</button>
           </div>
           <section className="section active" style={{ position: 'relative', marginTop: -32 }}>
-            <img src="/Productosasesorias_transp.png" alt="" style={{ position: 'absolute', top: 24, right: 0, width: 180, height: 'auto', zIndex: 0 }} />
+            <Image
+              src="/Productosasesorias_transp.png"
+              alt=""
+              width={180}
+              height={83}
+              style={{ position: 'absolute', top: 24, right: 0, zIndex: 0 }}
+            />
             <div className="section-header">
               <div style={{ textAlign: 'center' }}>
                 <svg width="56" height="56" viewBox="0 0 175.216 175.552" style={{ marginBottom: 4 }}>

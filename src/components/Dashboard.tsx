@@ -2,6 +2,7 @@
 
 import { useApp } from '@/lib/store';
 import { Card } from '@/components/ui/Card';
+import Image from 'next/image';
 
 function formatDate(dateStr: string) {
   if (!dateStr) return '-';
@@ -33,7 +34,14 @@ export function Dashboard() {
 
   return (
     <section id="section-dashboard" className="section active" style={{ position: 'relative', marginTop: -32 }}>
-      <img src="/Productosasesorias_transp.png" alt="" style={{ position: 'absolute', top: 24, right: 0, width: 180, height: 'auto', zIndex: 0 }} />
+      <Image
+        src="/Productosasesorias_transp.png"
+        alt=""
+        width={180}
+        height={83}
+        style={{ position: 'absolute', top: 24, right: 0, zIndex: 0 }}
+        priority
+      />
       <div className="section-header">
         <div style={{ textAlign: 'center' }}>
                 <svg width="56" height="56" viewBox="0 0 175.216 175.552" style={{ marginBottom: 4 }}>
