@@ -2,7 +2,6 @@
 
 import { useApp } from '@/lib/store';
 import { useRouter, usePathname } from 'next/navigation';
-import Image from 'next/image';
 
 const NAV_ITEMS = [
   { section: 'dashboard', label: 'Dashboard', icon: 'M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6' },
@@ -51,7 +50,7 @@ export function Sidebar() {
           {state.prospects.filter((p) => p.estado).length} / {state.prospects.length} mensajes
         </div>
         <div style={{ textAlign: 'center', marginTop: '180px' }}>
-          <Image
+          <img
             src="/Logo_P&A_transp.png"
             alt=""
             width={80}

@@ -2,7 +2,6 @@
 
 import { useApp } from '@/lib/store';
 import { Card } from '@/components/ui/Card';
-import Image from 'next/image';
 
 function formatDate(dateStr: string) {
   if (!dateStr) return '-';
@@ -34,15 +33,14 @@ export function Dashboard() {
 
   return (
     <section id="section-dashboard" className="section active" style={{ position: 'relative', marginTop: -32 }}>
-      <Image
+      <img
         src="/Productosasesorias_transp.png"
         alt=""
         width={180}
         height={83}
         style={{ position: 'absolute', top: 24, right: 0, zIndex: 0 }}
-        priority
       />
-      <div className="section-header">
+      <div className="section-header" style={{ position: 'relative', zIndex: 1 }}>
         <div style={{ textAlign: 'center' }}>
                 <svg width="56" height="56" viewBox="0 0 175.216 175.552" style={{ marginBottom: 4 }}>
                   <path fill="#075E54" stroke="#fff" strokeWidth="16" d="M87.184 25.227c-33.733 0-61.166 27.423-61.178 61.13a60.98 60.98 0 0 0 9.349 32.535l1.455 2.312-6.179 22.559 23.146-6.069 2.235 1.324c9.387 5.571 20.15 8.518 31.126 8.524h.023c33.707 0 61.14-27.426 61.153-61.135a60.75 60.75 0 0 0-17.895-43.251 60.75 60.75 0 0 0-43.235-17.929z"/>

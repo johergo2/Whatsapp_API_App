@@ -71,41 +71,21 @@ export default function SeleccionarClientePage() {
           <p className="subtitle">Seleccione el cliente a gestionar</p>
         </div>
 
-        <div className="login-form" style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
+        <div className="client-list">
           {clientes.map((cliente) => (
             <button
               key={cliente.id}
               type="button"
-              className="btn btn-primary btn-full"
-              style={{
-                textAlign: 'left',
-                padding: '16px 20px',
-                fontSize: 15,
-                background: '#fff',
-                color: '#075E54',
-                border: '2px solid #075E54',
-                borderRadius: 10,
-                cursor: 'pointer',
-                transition: 'all 0.2s',
-              }}
-              onMouseEnter={(e) => {
-                e.currentTarget.style.background = '#075E54';
-                e.currentTarget.style.color = '#fff';
-              }}
-              onMouseLeave={(e) => {
-                e.currentTarget.style.background = '#fff';
-                e.currentTarget.style.color = '#075E54';
-              }}
+              className="client-card"
               onClick={() => handleSelect(cliente.id)}
             >
-              <div style={{ fontWeight: 700, fontSize: 16, marginBottom: 4 }}>
-                {cliente.nombre_comercial}
+              <div className="client-name">{cliente.nombre_comercial}</div>
+              <div className="client-meta">
+                <span>{cliente.display_number}</span>
+                <span>Plan: {cliente.plan}</span>
               </div>
-              <div style={{ fontSize: 13, color: '#667781' }}>
-                {cliente.display_number} · Plan: {cliente.plan}
-              </div>
-              <div style={{ fontSize: 12, color: '#8696a0', marginTop: 2 }}>
-                {cliente.requests_max - cliente.requests_usadas} mensajes disponibles de {cliente.requests_max}
+              <div className="client-available">
+                {cliente.requests_max - cliente.requests_usadas} disponibles de {cliente.requests_max}
               </div>
             </button>
           ))}
