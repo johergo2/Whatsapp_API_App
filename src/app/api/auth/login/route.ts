@@ -26,7 +26,7 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ detail: 'Usuario desactivado' }, { status: 403 });
     }
 
-    const { data: rels } = await supabase
+const { data: rels } = await supabase
       .from('usuarios_clientes')
       .select('cliente_id')
       .eq('usuario_id', user.id);
@@ -42,7 +42,8 @@ export async function POST(req: NextRequest) {
       email: user.email,
       rol: user.rol,
       activo: user.activo,
-      cliente_id: clienteIds[0],
+      cliente_id: clienteIds.length === 1 ? clienteIds[0] : null,
+      cliente_ids: clienteIds,
     });
   } catch (e: any) {
     return NextResponse.json({ detail: e.message }, { status: 500 });

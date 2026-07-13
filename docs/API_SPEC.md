@@ -5,18 +5,84 @@
 - **Producción**: `https://whatsapp-api-app-silk.vercel.app/api`
 
 ## Autenticación
-Todas las API Routes requieren el header:
+Todas las API Routes (excepto `/api/auth/*` y `/api/cliente`) requieren el header:
 ```
-X-API-Key: sk_live_revisar archivos locales aquí no se publica API Key por seguridad
+X-Cliente-Id: <cliente_id_numérico>
 ```
-La API Route hashea la key con SHA256 y la compara con el campo `api_key` en `clientes_whatsapp`.
+El cliente_id se obtiene tras login exitoso y se almacena en `localStorage` como parte del objeto `mercurio_user`.
+
+### Flujo de Autenticación
+1. **Login**: `POST /api/auth/login` con `{ nombre, password }` → retorna `{ id, nombre, email, rol, activo, cliente_id }`
+2. **Registro**: `POST /api/auth/register` con `{ nombre, email?, password, api_key }` → crea usuario y lo vincula al cliente via `usuarios_clientes`
+3. **Sesión**: Frontend guarda usuario en `localStorage.setItem('mercurio_user', JSON.stringify(user))`
+4. **Restauración**: Al cargar la app, `AppProvider` lee `mercurio_user` y hace `GET /api/cliente?cliente_id=...` para validar sesión
+
+### Header `X-Cliente-Id`
+- Se envía automáticamente por `services.ts` en todas las peticiones
+- API Routes lo leen via `getClienteId(req)` helper
+- Valida que el usuario autenticado tenga acceso a ese `cliente_id` (via `usuarios_clientes`)
 
 ---
 
-## Endpoints
+## Endpoints de Autenticación
+
+### `POST /api/auth/login`
+Login con usuario + contraseña.
+
+**Request:**
+```json
+{
+  "nombre": "usuario123",
+  "password": "mipassword"
+}
+```
+
+**Response (200):**
+```json
+{
+  "id": 1,
+  "nombre": "usuario123",
+  "email": "user@ejemplo.com",
+  "rol": "usuario",
+  "activo": true,
+  "cliente_id": 1
+}
+```
+
+**Error (401):**
+```json
+{ "detail": "Usuario o contraseña inválidos" }
+```
+
+### `POST /api/auth/register`
+Registro de nuevo usuario vinculado a un cliente existente (via API Key del cliente).
+
+**Request:**
+```json
+{
+  "nombre": "nuevo_usuario",
+  "email": "user@ejemplo.com",
+  "password": "password123",
+  "api_key": "sk_live_..."
+}
+```
+
+**Response (201):**
+```json
+{ "success": true }
+```
+
+**Errores:**
+- `400`: Faltan campos requeridos
+- `401`: API Key inválida
+- `409`: Nombre de usuario ya existe
+
+---
+
+## Endpoints Principales
 
 ### `GET /api/cliente`
-Valida la API Key y retorna los datos del cliente.
+Obtiene datos del cliente. Acepta `X-Cliente-Id` header **o** query param `?cliente_id=1`.
 
 **Response (200):**
 ```json
@@ -36,15 +102,17 @@ Valida la API Key y retorna los datos del cliente.
 }
 ```
 
-**Error (401):**
+**Error (401/404):**
 ```json
-{ "detail": "API Key inválida" }
+{ "detail": "Cliente no encontrado" }
 ```
 
 ---
 
 ### `GET /api/variables`
 Retorna variables de configuración como `Record<string, string>`.
+
+**Header:** `X-Cliente-Id: 1`
 
 **Response (200):**
 ```json
@@ -62,6 +130,8 @@ Retorna variables de configuración como `Record<string, string>`.
 
 ### `GET|POST|PUT|DELETE /api/plantillas`
 CRUD de plantillas (tabla `plantillas`).
+
+**Header:** `X-Cliente-Id: 1`
 
 **GET** — Listar todas las plantillas del cliente autenticado. Cada plantilla incluye `header_type` (`none`, `image`, `document`, `video`).
 
@@ -90,6 +160,8 @@ CRUD de plantillas (tabla `plantillas`).
 ### `GET|POST|PUT|DELETE /api/prospectos`
 CRUD de prospectos (tabla `prospectos`).
 
+**Header:** `X-Cliente-Id: 1`
+
 **GET** — Listar todos los prospectos.
 
 **POST** — Crear prospecto.
@@ -115,10 +187,14 @@ CRUD de prospectos (tabla `prospectos`).
 ### `GET /api/mensajes`
 Retorna historial de mensajes del cliente autenticado (últimos 200).
 
+**Header:** `X-Cliente-Id: 1`
+
 ---
 
 ### `POST /api/send-message`
 Envía un template message a través de Meta Cloud API.
+
+**Header:** `X-Cliente-Id: 1`
 
 **Body:**
 ```json
@@ -149,6 +225,8 @@ Para adjunto de tipo documento usar `header_document_url`, para video usar `head
 
 ### `POST /api/send-media`
 Envía imagen/video con texto opcional.
+
+**Header:** `X-Cliente-Id: 1`
 
 **Body:**
 ```json
@@ -182,6 +260,8 @@ Webhook de Meta para recibir eventos de WhatsApp.
 
 ### `GET|POST /api/send-form-data`
 Persiste y recupera los valores del formulario de envío (`send_form_data`).
+
+**Header:** `X-Cliente-Id: 1`
 
 **GET** — Retorna todos los registros del cliente autenticado.
 ```json
@@ -217,7 +297,11 @@ Se carga automáticamente al iniciar sesión y se guarda al cambiar de plantilla
 ### `POST /api/outbound`
 Registra manualmente un mensaje saliente en `mensajes_whatsapp`.
 
+**Header:** `X-Cliente-Id: 1`
+
 ---
 
 ### `POST /api/chatwoot/webhook`
 Recibe webhooks de Chatwoot y reenvía la respuesta del agente a WhatsApp.
+
+**Header:** `X-Cliente-Id: 1`

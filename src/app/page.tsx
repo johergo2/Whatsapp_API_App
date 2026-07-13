@@ -4,19 +4,40 @@ import { useApp } from '@/lib/store';
 import { Sidebar } from '@/components/ui/Sidebar';
 import { LoginForm } from '@/components/LoginForm';
 import { Dashboard } from '@/components/Dashboard';
+import { useEffect } from 'react';
+import { useRouter } from 'next/navigation';
 
 export default function Home() {
   const { state, dispatch } = useApp();
+  const router = useRouter();
+
+  useEffect(() => {
+    if (state.user && state.user.cliente_id === null && state.user.cliente_ids && state.user.cliente_ids.length > 1 && !state.sessionLoading) {
+      router.push('/seleccionar-cliente');
+    }
+  }, [state.user, state.sessionLoading, router]);
 
   if (!state.user) {
     return <LoginForm />;
   }
 
-  if (state.sessionLoading) {
+  // Usuario con múltiples clientes sin seleccionar -> pantalla selección
+  if (state.user.cliente_id === null && state.user.cliente_ids && state.user.cliente_ids.length > 1) {
     return (
       <div id="login-screen" className="screen active">
         <div className="login-card" style={{ textAlign: 'center', padding: '3rem' }}>
           <p>Cargando sesión...</p>
+        </div>
+      </div>
+    );
+  }
+
+  // Usuario con cliente seleccionado pero datos aún no cargados -> loading
+  if (state.sessionLoading || (state.user.cliente_id !== null && !state.cliente)) {
+    return (
+      <div id="login-screen" className="screen active">
+        <div className="login-card" style={{ textAlign: 'center', padding: '3rem' }}>
+          <p>Cargando datos del cliente...</p>
         </div>
       </div>
     );

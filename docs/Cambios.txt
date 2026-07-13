@@ -3,6 +3,25 @@
 Fecha: 12/07/2026
 
 ============================================================
+AUTENTICACIÓN MULTI-USUARIO (12/07/2026)
+============================================================
+
+- Migración de autenticación por API Key a sistema multi-usuario con usuario/contraseña
+- Nuevas tablas BD: `usuarios` (id, nombre único, email, password_hash SHA256, rol, activo) y `usuarios_clientes` (N:M usuarios ↔ clientes)
+- POST /api/auth/login: valida usuario + password, retorna {id, nombre, email, rol, activo, cliente_id}
+- POST /api/auth/register: crea usuario + relación en usuarios_clientes usando API Key del cliente
+- Header `X-Cliente-Id` reemplaza `X-API-Key` en todas las API Routes
+- Helper `lib/auth-utils.ts` con `getClienteId(req)` para extraer cliente_id del header
+- `services.ts` actualizado para enviar `X-Cliente-Id` automáticamente
+- `store.tsx`: estado global incluye `user` (Usuario | null), acciones `SET_USER` / `LOGOUT`
+- Session restore: AppProvider lee `mercurio_user` de localStorage, valida con GET /api/cliente?cliente_id=...
+- LoginForm: campos usuario + password + link a registro
+- Register page: usuario, email opcional, password (mín 6), API Key del cliente
+- Logout: limpia `mercurio_user` + dispatch LOGOUT + redirect a /
+- 6 API Routes migradas a `X-Cliente-Id`: cliente, plantillas, prospectos, mensajes, send-form-data, variables
+- Trigger `validate_usuario_cliente` en BD para integridad referencial
+
+============================================================
 BRANDING CORPORATIVO Y MEJORAS UI (12/07/2026)
 ============================================================
 
@@ -51,3 +70,8 @@ PRÓXIMOS PASOS (PLANEADO)
   * Asignación de agentes a conversaciones
   * Reasignación automática al retirar un agente
   * Polling o WebSockets para mensajes en tiempo real
+- RLS (Row Level Security) en Supabase para aislar datos por cliente
+- Validación de formato de teléfono
+- Tests unitarios y de integración
+
+(End of file - total 100 lines)

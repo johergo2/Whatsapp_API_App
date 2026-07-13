@@ -173,27 +173,34 @@ export function AppProvider({ children }: { children: ReactNode }) {
       return;
     }
 
+    // Si usuario tiene múltiples clientes sin seleccionar, parar aquí
+    if (user.cliente_id === null && user.cliente_ids && user.cliente_ids.length > 1) {
+      dispatch({ type: 'SET_USER', payload: user });
+      dispatch({ type: 'SET_SESSION_LOADING', payload: false });
+      return;
+    }
+
     dispatch({ type: 'SET_USER', payload: user });
 
-    fetch(`/api/cliente?cliente_id=${user.cliente_id}`)
-      .then(async (res) => {
-        if (!res.ok) throw new Error('invalid');
-        const cliente = await res.json();
+    const clienteId = user.cliente_id;
+    const headers = { 'X-Cliente-Id': String(clienteId) };
+
+    // Fetch todo en paralelo (cliente + datos)
+    Promise.all([
+      fetch(`/api/cliente?cliente_id=${clienteId}`).then(r => { if (!r.ok) throw new Error('invalid'); return r.json(); }),
+      fetch('/api/plantillas', { headers }).then(r => r.json()).catch(() => []),
+      fetch('/api/prospectos', { headers }).then(r => r.json()).catch(() => []),
+      fetch('/api/mensajes', { headers }).then(r => r.json()).catch(() => []),
+      fetch('/api/send-form-data', { headers }).then(r => r.json()).then(rows => {
+        const map: Record<string, SendFormValues> = {};
+        for (const row of rows as Array<{ plantilla_id: number; values_json: Record<string, string> }>) {
+          map[String(row.plantilla_id)] = row.values_json as SendFormValues;
+        }
+        return map;
+      }).catch(() => ({})),
+    ])
+      .then(([cliente, templates, prospects, messages, sendFormData]) => {
         dispatch({ type: 'SET_CLIENTE', payload: cliente });
-
-        const [templates, prospects, messages, sendFormData] = await Promise.all([
-          fetch('/api/plantillas', { headers: { 'X-Cliente-Id': String(user.cliente_id) } }).then(r => r.json()).catch(() => []),
-          fetch('/api/prospectos', { headers: { 'X-Cliente-Id': String(user.cliente_id) } }).then(r => r.json()).catch(() => []),
-          fetch('/api/mensajes', { headers: { 'X-Cliente-Id': String(user.cliente_id) } }).then(r => r.json()).catch(() => []),
-          fetch('/api/send-form-data', { headers: { 'X-Cliente-Id': String(user.cliente_id) } }).then(r => r.json()).then(rows => {
-            const map: Record<string, SendFormValues> = {};
-            for (const row of rows as Array<{ plantilla_id: number; values_json: Record<string, string> }>) {
-              map[String(row.plantilla_id)] = row.values_json as SendFormValues;
-            }
-            return map;
-          }).catch(() => ({})),
-        ]);
-
         dispatch({ type: 'SET_ALL_DATA', payload: { templates, prospects, messages, sendFormData } });
       })
       .catch(() => {
@@ -204,6 +211,45 @@ export function AppProvider({ children }: { children: ReactNode }) {
         dispatch({ type: 'SET_SESSION_LOADING', payload: false });
       });
   }, []);
+
+  // Cargar datos del cliente cuando cambie el usuario (login o selección de cliente)
+  useEffect(() => {
+    const user = state.user;
+    if (!user || user.cliente_id === null || state.cliente?.id === user.cliente_id) {
+      return;
+    }
+
+    const clienteId = user.cliente_id;
+    const headers = { 'X-Cliente-Id': String(clienteId) };
+
+    dispatch({ type: 'SET_SESSION_LOADING', payload: true });
+
+    Promise.all([
+      fetch(`/api/cliente?cliente_id=${clienteId}`).then(r => { if (!r.ok) throw new Error('invalid'); return r.json(); }),
+      fetch('/api/plantillas', { headers }).then(r => r.json()).catch(() => []),
+      fetch('/api/prospectos', { headers }).then(r => r.json()).catch(() => []),
+      fetch('/api/mensajes', { headers }).then(r => r.json()).catch(() => []),
+      fetch('/api/send-form-data', { headers }).then(r => r.json()).then(rows => {
+        const map: Record<string, SendFormValues> = {};
+        for (const row of rows as Array<{ plantilla_id: number; values_json: Record<string, string> }>) {
+          map[String(row.plantilla_id)] = row.values_json as SendFormValues;
+        }
+        return map;
+      }).catch(() => ({})),
+    ])
+      .then(([cliente, templates, prospects, messages, sendFormData]) => {
+        dispatch({ type: 'SET_CLIENTE', payload: cliente });
+        dispatch({ type: 'SET_ALL_DATA', payload: { templates, prospects, messages, sendFormData } });
+      })
+      .catch(() => {
+        localStorage.removeItem('mercurio_user');
+        dispatch({ type: 'SET_SESSION_EXPIRED', payload: true });
+      })
+      .finally(() => {
+        dispatch({ type: 'SET_SESSION_LOADING', payload: false });
+      });
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [state.user?.cliente_id]);
 
   return (
     <AppContext.Provider value={{ state, dispatch }}>

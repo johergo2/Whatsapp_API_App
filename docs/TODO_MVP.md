@@ -1,4 +1,4 @@
-# TODO MVP — Mercurio Send
+# TODO MVP — Mercurio Software
 
 ## Leyenda
 - [x] Completado
@@ -28,7 +28,7 @@
 - [x] Tipos TypeScript definidos
 - [x] Store (React Context) implementado
 - [x] Componentes de UI migrados (Sidebar, Card, Modal, LoginForm)
-- [x] Páginas: Templates, Prospects, Send, History, Login
+- [x] Páginas: Templates, Prospects, Send, History, Login, Register
 - [x] Variables de entorno configuradas
 
 ### API Routes
@@ -43,6 +43,20 @@
 - [x] POST /api/outbound — registro manual
 - [x] GET|POST /api/send-form-data — persistencia de formulario de envío
 
+### **Autenticación Multi-usuario (NUEVA)**
+- [x] Tabla `usuarios` + `usuarios_clientes` en BD
+- [x] POST /api/auth/login — usuario + password (SHA256)
+- [x] POST /api/auth/register — usuario + api_key cliente
+- [x] Header `X-Cliente-Id` en todas las API Routes
+- [x] `auth-utils.ts` helper para extraer cliente_id
+- [x] `services.ts` usa `X-Cliente-Id` automáticamente
+- [x] `store.tsx` estado global con `user` + `cliente`
+- [x] Session restore desde `localStorage.mercurio_user`
+- [x] LoginForm: usuario + password + link a registro
+- [x] Register page: usuario, email opcional, password, API Key
+- [x] Logout limpia `mercurio_user` + dispatch LOGOUT
+- [x] 6 API Routes migradas a `X-Cliente-Id` (cliente, plantillas, prospectos, mensajes, send-form-data, variables)
+
 ### Funcionalidad
 - [x] Import CSV persiste en BD (reemplaza todos los prospectos del cliente)
 - [x] Auto-restauración de sesión al refrescar página
@@ -55,10 +69,11 @@
 - [x] Estado de envío visible completo y seleccionable
 
 ### Base de Datos
-- [x] Esquema SQL con 7 tablas (original + auxiliares)
+- [x] Esquema SQL con 9 tablas (original + auxiliares + 2 auth)
 - [x] Seed data para cliente #1
 - [x] Función RPC increment_requests_usadas
 - [x] Triggers para fecha_actualizacion
+- [x] Trigger validate_usuario_cliente para FK integrity
 
 ### Despliegue
 - [x] Vercel project configurado
@@ -73,8 +88,7 @@
 ## FASE 3 — Mejoras Post-MVP
 
 ### Funcionalidad
-- [ ] Autenticación con Supabase Auth (email + password)
-- [ ] Multi-cliente (cada usuario ve solo sus datos)
+- [ ] RLS (Row Level Security) en Supabase para aislar datos por cliente
 - [ ] Editor de plantillas con preview visual
 - [ ] Programación de envíos (fecha/hora)
 - [ ] Reportes descargables (PDF/Excel)
@@ -104,5 +118,8 @@
 
 ## Issues Conocidos
 - Desarrollo local y producción comparten la misma DB de Supabase
-- Sin autenticación real — solo API Key
 - No hay validación de formato de teléfono
+- Sin RLS habilitado (autenticación a nivel aplicación)
+- Un usuario solo puede pertenecer a un cliente (relación 1:1 actual, tabla permite N:M)
+
+(End of file - total 130 lines)

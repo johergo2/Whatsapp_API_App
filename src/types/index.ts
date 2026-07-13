@@ -108,5 +108,6 @@ export interface Usuario {
   email?: string;
   rol: 'superadmin' | 'usuario';
   activo: boolean;
-  cliente_id: number;
+  cliente_id: number | null;
+  cliente_ids: number[];
 }

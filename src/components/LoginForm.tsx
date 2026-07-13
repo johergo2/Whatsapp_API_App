@@ -4,7 +4,6 @@ import { useState } from 'react';
 import { useApp } from '@/lib/store';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
-import { loadAllClientData } from '@/lib/services';
 
 export function LoginForm() {
   const { dispatch } = useApp();
@@ -44,20 +43,17 @@ export function LoginForm() {
         return;
       }
 
-      dispatch({ type: 'SET_USER', payload: body });
-      localStorage.setItem('mercurio_user', JSON.stringify(body));
-
-      const resCliente = await fetch(`/api/cliente?cliente_id=${body.cliente_id}`);
-      if (resCliente.ok) {
-        const cliente = await resCliente.json();
-        dispatch({ type: 'SET_CLIENTE', payload: cliente });
-        dispatch({ type: 'SET_DEMO_MODE', payload: false });
+      // Usuario tiene múltiples clientes -> redirigir a selección
+      if (body.cliente_id === null && body.cliente_ids && body.cliente_ids.length > 1) {
+        dispatch({ type: 'SET_USER', payload: body });
+        localStorage.setItem('mercurio_user', JSON.stringify(body));
+        router.push('/seleccionar-cliente');
+        return;
       }
 
-      try {
-        const data = await loadAllClientData();
-        dispatch({ type: 'SET_ALL_DATA', payload: data });
-      } catch {}
+      // Usuario con un solo cliente -> AppProvider cargará los datos al montar
+      dispatch({ type: 'SET_USER', payload: body });
+      localStorage.setItem('mercurio_user', JSON.stringify(body));
 
       router.push('/');
     } catch (e: any) {
