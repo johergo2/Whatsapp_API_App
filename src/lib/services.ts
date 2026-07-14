@@ -1,6 +1,6 @@
 'use client';
 
-import type { Plantilla, Prospecto, Mensaje, SendFormValues } from '@/types';
+import type { Plantilla, Prospecto, Mensaje, SendFormValues, Cliente } from '@/types';
 
 function clienteId() {
   if (typeof window === 'undefined') return '';
@@ -26,6 +26,11 @@ async function apiFetch(path: string, options?: RequestInit) {
     throw new Error(err.detail || 'Error en la solicitud');
   }
   return res.json();
+}
+
+export async function fetchClient(clienteId: number): Promise<Cliente | null> {
+  if (!clienteId) return null;
+  return apiFetch(`/api/cliente?cliente_id=${clienteId}`);
 }
 
 // ─── Plantillas ───────────────────────────────────
@@ -98,12 +103,11 @@ export async function replaceAllProspects(prospects: Omit<Prospecto, 'id'>[]): P
   // Delete all existing prospects for this client
   await apiFetch('/api/prospectos', { method: 'DELETE' });
 
-  // Insert each one
-  const created: Prospecto[] = [];
-  for (const p of prospects) {
-    const added = await addProspect(p);
-    created.push(added);
-  }
+  // Bulk insert all prospects
+  const created = await apiFetch('/api/prospectos', {
+    method: 'POST',
+    body: JSON.stringify(prospects),
+  });
   return created;
 }
 
@@ -114,7 +118,6 @@ export async function fetchMessages(): Promise<Mensaje[]> {
 }
 
 // ─── Bulk load after login ────────────────────────
-
 export async function loadAllClientData() {
   const [templates, prospects, messages, sendFormData] = await Promise.all([
     fetchTemplates().catch(() => []),

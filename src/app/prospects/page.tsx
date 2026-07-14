@@ -35,12 +35,28 @@ export default function ProspectsPage() {
   const [progressTotal, setProgressTotal] = useState(0);
   const [logs, setLogs] = useState<string[]>([]);
   const [onlyPending, setOnlyPending] = useState(true);
+  const [importOpen, setImportOpen] = useState(false);
+  const [importPct, setImportPct] = useState(0);
+  const [importTotal, setImportTotal] = useState(0);
+  const [importLogs, setImportLogs] = useState<string[]>([]);
 
   const tpl = state.prosTemplateId
     ? state.templates.find((t) => t.id === state.prosTemplateId) || null
     : null;
 
   const defaults = (tpl && state.sendFormData[String(tpl.id)]) || {};
+
+  async function refreshProspects() {
+    const { fetchProspects, fetchClient } = await import('@/lib/services');
+    const [prospects, cliente] = await Promise.all([
+      fetchProspects(),
+      fetchClient(state.cliente?.id || 0)
+    ]);
+    dispatch({ type: 'SET_PROSPECTS', payload: prospects });
+    if (cliente) {
+      dispatch({ type: 'SET_CLIENTE', payload: cliente });
+    }
+  }
 
 function openNew() {
     setEditIdx(-1);
@@ -161,52 +177,106 @@ function openNew() {
       const prospects: Omit<Prospecto, 'id'>[] = [];
       const rowErrors: string[] = [];
       const savedDefaults = tpl ? (state.sendFormData[String(tpl.id)] || {}) : {};
-      dataLines.forEach((line, rowIdx) => {
-        const parts = line.split(delim).map((s) => s.trim().replace(/^"|"$/g, ''));
-        if (parts.length >= 2 && parts[0] && parts[1]) {
-          const footer_imgs: string[] = [];
-          for (let i = 0; i < 4; i++) {
-            if (imgIndices[i] >= 0) {
-              footer_imgs.push(parts[imgIndices[i]] || '');
+
+      // Open import progress modal
+      setImportOpen(true);
+      setImportPct(5);
+      setImportTotal(dataLines.length);
+      setImportLogs(['Iniciando importación...']);
+
+      // Parse data lines with progress
+      let processed = 0;
+      const batchSize = 50; // procesar en lotes de 50 para permitir render
+      for (let batchStart = 0; batchStart < dataLines.length; batchStart += batchSize) {
+        const batchEnd = Math.min(batchStart + batchSize, dataLines.length);
+        for (let rowIdx = batchStart; rowIdx < batchEnd; rowIdx++) {
+          const line = dataLines[rowIdx];
+          const parts = line.split(delim).map((s) => s.trim().replace(/^"|"$/g, ''));
+          if (parts.length >= 2 && parts[0] && parts[1]) {
+            const footer_imgs: string[] = [];
+            for (let i = 0; i < 4; i++) {
+              if (imgIndices[i] >= 0) {
+                footer_imgs.push(parts[imgIndices[i]] || '');
+              }
             }
+            if (tpl && tpl.num_footer > 0) {
+              let filled = 0;
+              for (let i = 0; i < tpl.num_footer; i++) {
+                const csvVal = (footer_imgs[i] || '') || '';
+                const defaultVal = savedDefaults[`footer_url${i + 1}`] || '';
+                if (csvVal || defaultVal) filled++;
+              }
+              if (filled < tpl.num_footer) {
+                rowErrors.push(`Fila ${rowIdx + 2} (${parts[0]}): tiene ${filled} imagen(es), la plantilla requiere ${tpl.num_footer}`);
+              }
+            }
+            prospects.push({
+              nombre: parts[0],
+              telefono: parts[1],
+              adjunto_cabecera: adjuntoIdx >= 0 ? parts[adjuntoIdx] || '' : '',
+              footer_imgs,
+              captions: [],
+              estado: '',
+            });
           }
-          if (tpl && tpl.num_footer > 0) {
-            let filled = 0;
-            for (let i = 0; i < tpl.num_footer; i++) {
-              const csvVal = footer_imgs[i] || '';
-              const defaultVal = savedDefaults[`footer_url${i + 1}`] || '';
-              if (csvVal || defaultVal) filled++;
-            }
-            if (filled < tpl.num_footer) {
-              rowErrors.push(`Fila ${rowIdx + 2} (${parts[0]}): tiene ${filled} imagen(es), la plantilla requiere ${tpl.num_footer}`);
-            }
+
+          // Update progress every row
+          processed++;
+          if (processed % 10 === 0 || processed === dataLines.length) {
+            const pct = 5 + Math.round((processed / dataLines.length) * 80);
+            setImportPct(pct);
+            setImportLogs(prev => [...prev, `Procesada fila ${processed}/${dataLines.length}`]);
           }
-          prospects.push({
-            nombre: parts[0],
-            telefono: parts[1],
-            adjunto_cabecera: adjuntoIdx >= 0 ? parts[adjuntoIdx] || '' : '',
-            footer_imgs,
-            captions: [],
-            estado: '',
-          });
         }
-      });
+        // Yield to event loop to let React render progress
+        await new Promise(r => setTimeout(r, 0));
+      }
 
       if (rowErrors.length > 0) {
+        setImportOpen(false);
         alert('Errores de validación en el CSV:\n' + rowErrors.join('\n'));
         return;
       }
 
       if (prospects.length === 0) {
+        setImportOpen(false);
         alert('No se encontraron prospectos válidos en el CSV');
         return;
       }
 
+      // Validar límite de mensajes disponibles
+      const cliente = state.cliente;
+      if (cliente) {
+        const disponibles = (cliente.requests_max || 0) - (cliente.requests_usadas || 0);
+        if (prospects.length > disponibles) {
+          setImportOpen(false);
+          alert(
+            `No hay suficientes mensajes disponibles.\n` +
+            `Prospectos en CSV: ${prospects.length}\n` +
+            `Mensajes disponibles: ${disponibles} (${cliente.requests_max} máx - ${cliente.requests_usadas} usadas)\n` +
+            `Debe reducir la cantidad de prospectos o esperar a que se liberen mensajes.`
+          );
+          return;
+        }
+        // Mostrar información de mensajes disponibles
+        setImportLogs(prev => [...prev, `Mensajes disponibles: ${disponibles} (${prospects.length} se usarán)`]);
+      }
+
+      // Save to DB with progress
+      setImportPct(85);
+      setImportLogs(prev => [...prev, `Guardando ${prospects.length} prospectos en BD...`]);
+
       try {
         const created = await replaceAllProspects(prospects);
         dispatch({ type: 'SET_PROSPECTS', payload: created });
-        alert(`${created.length} prospectos importados y guardados en BD`);
+        setImportLogs(prev => [...prev, `✓ ${created.length} prospectos importados y guardados en BD`]);
+        setImportPct(100);
+        setTimeout(() => {
+          setImportOpen(false);
+          alert(`${created.length} prospectos importados y guardados en BD`);
+        }, 800);
       } catch (e) {
+        setImportOpen(false);
         alert('Error al guardar prospectos en BD');
         console.error(e);
       }
@@ -381,6 +451,14 @@ function openNew() {
             <span style={{ fontSize: 14, color: '#667781' }}>Prospectos</span>
             <button className="btn btn-outline btn-sm" style={{ marginLeft: 'auto', background: '#075E54', color: '#fff', borderColor: '#075E54' }} onClick={() => { localStorage.removeItem('mercurio_user'); dispatch({ type: 'LOGOUT' }); window.location.href = '/'; }}>Salir</button>
           </div>
+          {importOpen && (
+            <div style={{ position: 'fixed', top: 0, left: 0, right: 0, height: 4, zIndex: 1000, background: 'var(--bg)' }}>
+              <div className="progress-bar" style={{ height: '100%' }}>
+                <div className="progress-fill" style={{ width: importPct + '%', height: '100%', background: 'linear-gradient(90deg, var(--secondary), var(--accent))', borderRadius: '0', transition: 'width 0.3s' }} />
+              </div>
+              <div style={{ position: 'absolute', top: -20, right: 16, fontSize: 11, color: 'var(--text-secondary)', whiteSpace: 'nowrap' }}>{importPct}%</div>
+            </div>
+          )}
           <section className="section active" style={{ position: 'relative' }}>
             <img
               src="/Productosasesorias_transp.png"
@@ -427,6 +505,10 @@ function openNew() {
                 <button className="btn btn-primary" onClick={openNew}>
                   <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><line x1="12" y1="5" x2="12" y2="19" /><line x1="5" y1="12" x2="19" y2="12" /></svg>
                   Agregar
+                </button>
+                <button className="btn btn-secondary" onClick={refreshProspects}>
+                  <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M23 4v6h-6" /><path d="M1 20v-6h6" /><path d="M3.51 9a9 9 0 0 1 14.85-3.36L23 10M1 18v6h6" /></svg>
+                  Actualizar
                 </button>
                 <button className="btn btn-outline" onClick={() => {
                   if (!state.prosTemplateId) {
@@ -557,6 +639,37 @@ function openNew() {
                 </div>
                 <div className="log-container" style={{ maxHeight: 300, overflowY: 'auto', marginTop: 12 }}>
                   {logs.map((l, i) => (
+                    <div
+                      key={i}
+                      className={
+                        l.includes('✓')
+                          ? 'log-success'
+                          : l.includes('✗') || l.includes('ERROR')
+                          ? 'log-error'
+                          : l.includes('===')
+                          ? 'log-warning'
+                          : 'log-info'
+                      }
+                      style={{ fontSize: 12, padding: '2px 0' }}
+                    >
+                      {l}
+                    </div>
+                  ))}
+                </div>
+              </Card>
+            )}
+
+            {importOpen && (
+              <Card>
+                <h3>Importando CSV</h3>
+                <div className="progress-container">
+                  <div className="progress-bar">
+                    <div className="progress-fill" style={{ width: importPct + '%' }} />
+                  </div>
+                  <span className="progress-text">{importPct}%</span>
+                </div>
+                <div className="log-container" style={{ maxHeight: 300, overflowY: 'auto', marginTop: 12 }}>
+                  {importLogs.map((l, i) => (
                     <div
                       key={i}
                       className={

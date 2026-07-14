@@ -1,6 +1,68 @@
 === MERCURIO SOFTWARE — REGISTRO DE CAMBIOS ===
 
-Fecha: 12/07/2026
+Fecha: 13/07/2026
+
+============================================================
+BULK INSERT PROSPECTOS: OPTIMIZACIÓN DE RENDIMIENTO (13/07/2026)
+============================================================
+
+- Problema: replaceAllProspects hacía N peticiones POST secuenciales (una por prospecto)
+- Solución: nuevo endpoint POST /api/prospectos que acepta array (bulk insert)
+- services.ts: replaceAllProspects ahora usa 1 sola petición POST con array
+- API route POST /api/prospectos detecta array y usa supabase.insert(array) en lote
+- Mejora: de N requests HTTP a 1 solo request (N=prospectos)
+- Compatibilidad: mantiene endpoint single insert para compatibilidad
+- Endpoint DELETE /api/prospectos sin ?id= borra todos (para replaceAll)
+
+============================================================
+IMPORTACIÓN CSV CON PROGRESO (13/07/2026)
+============================================================
+
+- Pantalla Prospectos: modal de progreso al importar CSV
+- Estados: importOpen, importPct, importTotal, importLogs
+- Progreso en 3 fases: parseo (5-85%), guardado BD (85-100%), completado
+- Logs en tiempo real: filas procesadas, errores, guardado
+- Cierre automático 800ms tras éxito, alerta final con cantidad
+- Reutiliza estilos Card/progress-bar/log-container del envío
+
+============================================================
+SIDEBAR: BOTÓN CERRAR (X) Y AUTO-OCULTAR (13/07/2026)
+============================================================
+
+- Botón X en esquina sup. derecha del brand (solo móvil)
+- onClick: document.getElementById('sidebar')?.classList.remove('open')
+- Clic fuera del sidebar → cierra (listener mousedown en document)
+- Click en item navegación (móvil <768px) → cierra tras navegar
+- Resize a desktop (>=768px) → auto-cierra
+- Logo P&A centrado en footer (margin: 0 auto)
+
+============================================================
+LOGO PRODUCTOS Y ASESORÍAS CENTRADO (13/07/2026)
+============================================================
+
+- Imagen decorativa superior derecha → centrada horizontalmente
+- Estilo: position: absolute; top: 24; left: 50%; transform: translateX(-50%); z-index: 0
+- Header (Mercurio Software) con z-index: 1 + position: relative
+- Aplicado en 5 páginas: Dashboard, Prospects, Send, History, Templates
+- Imagen: zIndex: 0 → queda detrás del texto "Mercurio Software"
+
+============================================================
+IMÁGENES: <img> NATIVO VS next/image (13/07/2026)
+============================================================
+
+- Problema: next/image con priority renderiza placeholder + imagen real = 2 imágenes superpuestas
+- Solución: <img> nativo en 6 archivos (Dashboard, Prospects, Send, History, Templates, Sidebar)
+- zIndex: 0 en imagen, zIndex: 1 en header → texto encima
+- Imagen centrada: left: 50%; transform: translateX(-50%)
+
+============================================================
+STACKING CONTEXT FIX: marginTop -32 ELIMINADO (13/07/2026)
+============================================================
+
+- section tenía marginTop: -32 que subía header sobre imagen
+- Fix: quitar marginTop: -32, agregar paddingTop: 110px al header
+- Imagen 83px alto + top: 24 = 107px → padding 110px despeja
+- Aplicado en 5 páginas
 
 ============================================================
 AUTENTICACIÓN MULTI-USUARIO (12/07/2026)
@@ -73,5 +135,6 @@ PRÓXIMOS PASOS (PLANEADO)
 - RLS (Row Level Security) en Supabase para aislar datos por cliente
 - Validación de formato de teléfono
 - Tests unitarios y de integración
+- Progreso de importación CSV en pantalla Prospectos (EN PROGRESO)
 
-(End of file - total 100 lines)
+(End of file - total 210 lines)
