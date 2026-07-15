@@ -75,12 +75,20 @@ export interface Plantilla {
 export interface Prospecto {
   id?: number;
   cliente_id?: number;
+  usuario_id?: number;
+  plantilla_id?: number;
   nombre: string;
   telefono: string;
   adjunto_cabecera: string;
   footer_imgs: string[];
   captions: string[];
   estado: string;
+  texto1?: string;
+  texto2?: string;
+  texto3?: string;
+  texto4?: string;
+  texto5?: string;
+  texto6?: string;
 }
 
 export interface SendFormValues {

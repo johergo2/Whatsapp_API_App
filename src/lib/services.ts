@@ -12,12 +12,23 @@ function clienteId() {
   } catch { return ''; }
 }
 
+function usuarioId() {
+  if (typeof window === 'undefined') return '';
+  try {
+    const raw = localStorage.getItem('mercurio_user');
+    if (!raw) return '';
+    const user = JSON.parse(raw);
+    return String(user.id || '');
+  } catch { return ''; }
+}
+
 async function apiFetch(path: string, options?: RequestInit) {
   const res = await fetch(path, {
     ...options,
     headers: {
       'Content-Type': 'application/json',
       'X-Cliente-Id': clienteId(),
+      'X-Usuario-Id': usuarioId(),
       ...options?.headers,
     },
   });
@@ -77,8 +88,9 @@ export async function upsertSendFormData(plantillaId: number, values: Record<str
 
 // ─── Prospectos ───────────────────────────────────
 
-export async function fetchProspects(): Promise<Prospecto[]> {
-  return apiFetch('/api/prospectos');
+export async function fetchProspects(plantillaId?: number | null): Promise<Prospecto[]> {
+  const params = plantillaId ? `?plantilla_id=${plantillaId}` : '';
+  return apiFetch(`/api/prospectos${params}`);
 }
 
 export async function addProspect(p: Omit<Prospecto, 'id'>): Promise<Prospecto> {
@@ -99,9 +111,14 @@ export async function deleteProspectFromDb(id: number): Promise<void> {
   await apiFetch(`/api/prospectos?id=${id}`, { method: 'DELETE' });
 }
 
-export async function replaceAllProspects(prospects: Omit<Prospecto, 'id'>[]): Promise<Prospecto[]> {
-  // Delete all existing prospects for this client
+export async function deleteAllProspects(): Promise<void> {
   await apiFetch('/api/prospectos', { method: 'DELETE' });
+}
+
+export async function replaceAllProspects(prospects: Omit<Prospecto, 'id'>[], plantillaId?: number | null): Promise<Prospecto[]> {
+  // Delete all existing prospects for this client + plantilla
+  const params = plantillaId ? `?plantilla_id=${plantillaId}` : '';
+  await apiFetch(`/api/prospectos${params}`, { method: 'DELETE' });
 
   // Bulk insert all prospects
   const created = await apiFetch('/api/prospectos', {

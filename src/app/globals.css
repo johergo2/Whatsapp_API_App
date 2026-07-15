@@ -139,6 +139,108 @@ body {
 .section-header h2 { font-size: 22px; color: var(--primary); margin-bottom: 2px; }
 .section-header p { color: var(--text-secondary); font-size: 14px; }
 
+/* Header images layout - responsive */
+.section.active .header-images {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 16px;
+  position: relative;
+}
+
+.section.active .header-brand {
+  text-align: center;
+  flex: 1;
+}
+
+.section.active .header-brand img {
+  max-width: 100%;
+  height: auto;
+}
+
+.section.active .header-logo-mercurio {
+  width: 56px;
+  height: 56px;
+  margin-bottom: 4px;
+}
+
+.section.active .header-logo-mercurio-text {
+  color: var(--primary);
+  font-size: 22px;
+  font-weight: 700;
+  margin-top: -12px;
+  margin-bottom: 2px;
+}
+
+.section.active .header-logo-pya-decorative {
+  position: absolute;
+  top: 24px;
+  right: 0;
+  width: 180px;
+  height: auto;
+  z-index: 0;
+}
+
+@media (min-width: 768px) {
+  .section.active .header-images {
+    flex-direction: row;
+    justify-content: space-between;
+    align-items: flex-start;
+    padding-top: 0;
+  }
+
+  .section.active .header-brand {
+    text-align: center;
+    flex: 1;
+    margin-top: -32px;
+  }
+
+  .section.active .header-logo-pya-decorative {
+    position: absolute;
+    top: 24px;
+    right: 0;
+    width: 180px;
+    height: auto;
+    z-index: 0;
+  }
+
+  .section.active .header-brand img {
+    margin-bottom: 4px;
+  }
+
+  .section.active .header-logo-mercurio-text {
+    color: var(--primary);
+    font-size: 22px;
+    font-weight: 700;
+    margin-top: -12px;
+    margin-bottom: 2px;
+  }
+}
+
+@media (max-width: 767px) {
+  .section.active .header-images {
+    flex-direction: column;
+    align-items: center;
+    gap: 8px;
+  }
+  
+  .section.active .header-logo-pya-decorative {
+    position: static;
+    opacity: 1;
+    width: 140px;
+    height: auto;
+    margin-bottom: 8px;
+  }
+  
+  .section.active .header-brand {
+    order: 2;
+  }
+  
+  .section.active .header-logo-pya-decorative {
+    order: 1;
+  }
+}
+
 /* Cards */
 .card {
   background: var(--bg-card);
@@ -279,26 +381,27 @@ body {
 
 /* Tables */
 .table-container { overflow-x: auto; }
-.table { width: 100%; border-collapse: collapse; font-size: 14px; }
+.table { width: 100%; border-collapse: collapse; font-size: 13px; }
 .table th {
   text-align: left;
-  padding: 12px 16px;
-  font-size: 12px;
+  padding: 4px 8px;
+  font-size: 11px;
   font-weight: 600;
   color: var(--text-secondary);
   text-transform: uppercase;
-  letter-spacing: 0.5px;
+  letter-spacing: 0.3px;
   border-bottom: 2px solid var(--border);
   white-space: nowrap;
 }
 .table td {
-  padding: 12px 16px;
+  padding: 4px 8px;
   border-bottom: 1px solid var(--border);
+  line-height: 1.2;
 }
 .table tr:hover td { background: #FAFAFA; }
-.empty-state { text-align: center !important; color: var(--text-secondary); padding: 40px 16px !important; font-style: italic; }
+.empty-state { text-align: center !important; color: var(--text-secondary); padding: 24px 16px !important; font-style: italic; }
 .status-cell { white-space: normal; min-width: 130px; word-break: break-all; user-select: text; max-width: 300px; }
-.actions-cell { white-space: nowrap; width: 80px; }
+.actions-cell { white-space: nowrap; width: 64px; }
 .cell-input {
   width: 100%;
   min-width: 120px;
@@ -313,7 +416,7 @@ body {
 .cell-input:hover { border-color: var(--border); background: #FFF; }
 .cell-input:focus { border-color: var(--primary); background: #FFF; outline: none; }
 .cell-input::placeholder { color: #CCC; font-style: italic; }
-.caption-cell { width: 44px; text-align: center; padding: 8px !important; }
+.caption-cell { width: 44px; text-align: center; padding: 4px 8px !important; }
 .caption-cell .btn-icon { padding: 4px; }
 
 /* Toolbar */

@@ -183,15 +183,15 @@ export function AppProvider({ children }: { children: ReactNode }) {
     dispatch({ type: 'SET_USER', payload: user });
 
     const clienteId = user.cliente_id;
-    const headers = { 'X-Cliente-Id': String(clienteId) };
+    const headers = { 'X-Cliente-Id': String(clienteId), 'X-Usuario-Id': String(user.id) };
 
     // Fetch todo en paralelo (cliente + datos)
     Promise.all([
       fetch(`/api/cliente?cliente_id=${clienteId}`).then(r => { if (!r.ok) throw new Error('invalid'); return r.json(); }),
-      fetch('/api/plantillas', { headers }).then(r => r.json()).catch(() => []),
-      fetch('/api/prospectos', { headers }).then(r => r.json()).catch(() => []),
-      fetch('/api/mensajes', { headers }).then(r => r.json()).catch(() => []),
-      fetch('/api/send-form-data', { headers }).then(r => r.json()).then(rows => {
+      fetch('/api/plantillas', { headers }).then(r => r.ok ? r.json() : []).catch(() => []),
+      fetch('/api/prospectos', { headers }).then(r => r.ok ? r.json() : []).catch(() => []),
+      fetch('/api/mensajes', { headers }).then(r => r.ok ? r.json() : []).catch(() => []),
+      fetch('/api/send-form-data', { headers }).then(r => r.ok ? r.json() : []).then(rows => {
         const map: Record<string, SendFormValues> = {};
         for (const row of rows as Array<{ plantilla_id: number; values_json: Record<string, string> }>) {
           map[String(row.plantilla_id)] = row.values_json as SendFormValues;
@@ -220,16 +220,16 @@ export function AppProvider({ children }: { children: ReactNode }) {
     }
 
     const clienteId = user.cliente_id;
-    const headers = { 'X-Cliente-Id': String(clienteId) };
+    const headers = { 'X-Cliente-Id': String(clienteId), 'X-Usuario-Id': String(user.id) };
 
     dispatch({ type: 'SET_SESSION_LOADING', payload: true });
 
     Promise.all([
       fetch(`/api/cliente?cliente_id=${clienteId}`).then(r => { if (!r.ok) throw new Error('invalid'); return r.json(); }),
-      fetch('/api/plantillas', { headers }).then(r => r.json()).catch(() => []),
-      fetch('/api/prospectos', { headers }).then(r => r.json()).catch(() => []),
-      fetch('/api/mensajes', { headers }).then(r => r.json()).catch(() => []),
-      fetch('/api/send-form-data', { headers }).then(r => r.json()).then(rows => {
+      fetch('/api/plantillas', { headers }).then(r => r.ok ? r.json() : []).catch(() => []),
+      fetch('/api/prospectos', { headers }).then(r => r.ok ? r.json() : []).catch(() => []),
+      fetch('/api/mensajes', { headers }).then(r => r.ok ? r.json() : []).catch(() => []),
+      fetch('/api/send-form-data', { headers }).then(r => r.ok ? r.json() : []).then(rows => {
         const map: Record<string, SendFormValues> = {};
         for (const row of rows as Array<{ plantilla_id: number; values_json: Record<string, string> }>) {
           map[String(row.plantilla_id)] = row.values_json as SendFormValues;
