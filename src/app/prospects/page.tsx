@@ -60,6 +60,10 @@ export default function ProspectsPage() {
   const defaults = (tpl && state.sendFormData[String(tpl.id)]) || {};
 
   async function refreshProspects() {
+    if (!state.prosTemplateId) {
+      dispatch({ type: 'SET_PROSPECTS', payload: [] });
+      return;
+    }
     const { fetchProspects, fetchClient } = await import('@/lib/services');
     const [prospects, cliente] = await Promise.all([
       fetchProspects(state.prosTemplateId),
