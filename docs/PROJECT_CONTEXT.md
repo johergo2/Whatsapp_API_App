@@ -131,11 +131,20 @@ WhatsApp_API_App/
 - `nomb_mio` agregado como campo en plantillas (nombre del remitente)
 - `header_type` reemplazó a `has_header` (soporta: `none`, `image`, `document`, `video`)
 - `adjunto_cabecera` reemplazó a `header_img` en prospectos
-- Sesión se restaura automáticamente al refrescar la página (`AppProvider` + `localStorage.mercurio_user`)
-- Prospectos se persisten en BD al importar CSV (reemplazo completo por cliente)
+- Sesión se restaura automáticamente al refrescar página (`AppProvider` + `localStorage.mercurio_user`)
+- Prospectos se persisten en BD al importar CSV (reemplazo completo por cliente + usuario)
 - Estado de envío visible completo y seleccionable en tabla de prospectos
 - Dashboard muestra número de WhatsApp (`display_number`) y Phone ID
 - Branding corporativo en todas las pantallas: icono WhatsApp, "Mercurio Software", logos P&A
+- **Texto personalizado por prospecto**: columnas `texto1`–`texto6` en tabla `prospectos`, con fallback a valores por defecto de "Enviar mensajes"
+- **CSV import mejorado**: parsea columnas `texto1`–`texto6`, valida contra `tpl.num_textos`, asigna `plantilla_id` automáticamente
+- **Tabla de prospectos**: muestra siempre todas las columnas (cabecera, texto1-6, footer img 1-4) sin depender de plantilla seleccionada; vacía cuando no hay plantilla
+- **Paginación**: 20 prospectos por página en Prospects e History
+- **Espaciado compacto**: padding `4px 8px` en tablas
+- **History page**: fetch directo a `/api/mensajes` con fallback si store vacío, paginación (20/página), filtros por columna (De, Para, Dirección, Mensaje, Estado, Fecha Desde/Hasta) — todos client-side via `useMemo`
+- **Filtros de fecha**: inputs `type="date"` con etiquetas "Desde" y "Hasta" encima de la tabla, comparación por string `YYYY-MM-DD` (sin timezone issues)
+- **API `/api/mensajes`**: acepta `page`, `pageSize` (default 200), `direction`, `estado`, `search` como query params; retorna `{ data, total, page, pageSize }`
+- **Store**: extrae `.data` de la respuesta de `/api/mensajes`
 
 ## Pendientes / Próximos Pasos
 - Chat multiagente para responder mensajes entrantes desde la misma app (reemplazo de Chatwoot)

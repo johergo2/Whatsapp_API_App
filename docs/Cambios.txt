@@ -138,3 +138,40 @@ PRÓXIMOS PASOS (PLANEADO)
 - Progreso de importación CSV en pantalla Prospectos (EN PROGRESO)
 
 (End of file - total 210 lines)
+============================================================
+HISTORY PAGE: PAGINACION, FILTROS Y FETCH DIRECTO (17/07/2026)
+============================================================
+
+- History page reescrita: fetch directo a /api/mensajes con headers X-Cliente-Id y X-Usuario-Id
+  (ya no depende exclusivamente del store, usa estado local data + loading)
+- Paginacion: 20 registros por pagina con botones Anterior/Siguiente + numeracion
+- Filtros por columna en el encabezado de la tabla:
+  * De, Para, Mensaje, Estado -> inputs de texto
+  * Direccion -> select (Todas/Saliente/Entrante)
+  * Fecha -> dos inputs type="date" (Desde/Hasta) con etiquetas visibles encima de la tabla
+  * Todos los filtros son client-side via useMemo, comparacion de strings YYYY-MM-DD
+- Boton ""Limpiar fechas"" visible cuando hay fechas seleccionadas
+- Muestra contador de registros: total y (filtrados de total)
+- API /api/mensajes modificada:
+  * Query params: page, pageSize (default 200), direction, estado, search
+  * Retorna { data: Mensaje[], total: number, page: number, pageSize: number }
+  * Orden descendente por fecha_creacion
+- Store: fetch de /api/mensajes extrae .data del nuevo formato
+- services.ts: fetchMessages(filters?) arma query params
+- globals.css: clase .col-filter para inputs de filtro
+- Debug amarillo temporal agregado (se retirara en proxima sesion)
+
+============================================================
+PROXIMOS PASOS (ACTUALIZADO 17/07/2026)
+============================================================
+
+- Desarrollo de chat multiagente integrado (reemplazo de Chatwoot)
+  * Vista de conversaciones agrupadas por numero
+  * Input para responder desde la app
+  * Asignacion de agentes a conversaciones
+  * Reasignacion automatica al retirar un agente
+  * Polling o WebSockets para mensajes en tiempo real
+- RLS (Row Level Security) en Supabase para aislar datos por cliente
+- Validacion de formato de telefono
+- Tests unitarios y de integracion
+- Retirar debug amarillo de History page

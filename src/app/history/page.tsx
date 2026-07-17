@@ -2,9 +2,8 @@
 
 import { useApp } from '@/lib/store';
 import { Sidebar } from '@/components/ui/Sidebar';
-import { useEffect, useRef } from 'react';
+import { useMemo, useState, useEffect } from 'react';
 import { Card } from '@/components/ui/Card';
-import { fetchMessages } from '@/lib/services';
 
 function formatDate(dateStr: string) {
   if (!dateStr) return '-';
@@ -18,16 +17,65 @@ function formatDate(dateStr: string) {
 
 export default function HistoryPage() {
   const { state, dispatch } = useApp();
-  const loaded = useRef(false);
+  const [page, setPage] = useState(0);
+  const [loading, setLoading] = useState(true);
+  const [data, setData] = useState<any[]>([]);
+  const pageSize = 20;
+
+  const [fDe, setFDe] = useState('');
+  const [fPara, setFPara] = useState('');
+  const [fDir, setFDir] = useState('');
+  const [fMsg, setFMsg] = useState('');
+  const [fEst, setFEst] = useState('');
+  const [fFechaDesde, setFFechaDesde] = useState('');
+  const [fFechaHasta, setFFechaHasta] = useState('');
+
+  const [debug, setDebug] = useState('');
 
   useEffect(() => {
-    if (!state.demoMode && !loaded.current) {
-      loaded.current = true;
-      fetchMessages()
-        .then((msgs) => dispatch({ type: 'SET_MESSAGES', payload: msgs }))
-        .catch(() => {});
-    }
-  }, [state.demoMode, dispatch]);
+    const cId = state.user?.cliente_id;
+    const uId = state.user?.id;
+    if (!cId || !uId) { setDebug('No user or cliente_id'); return; }
+    setDebug(`Fetching con cliente_id=${cId}, usuario_id=${uId}...`);
+    setLoading(true);
+    fetch('/api/mensajes', {
+      headers: { 'X-Cliente-Id': String(cId), 'X-Usuario-Id': String(uId) },
+    })
+      .then(async r => {
+        if (!r.ok) { setDebug(`Error HTTP ${r.status}`); return { data: [] }; }
+        const text = await r.text();
+        try {
+          const j = JSON.parse(text);
+          const arr = j.data || [];
+          setDebug(`OK: ${arr.length} registros. data=${JSON.stringify(arr).slice(0, 200)}`);
+          return j;
+        } catch {
+          setDebug(`No JSON: ${text.slice(0, 200)}`);
+          return { data: [] };
+        }
+      })
+      .then(j => { setData(j.data || []); })
+      .catch(e => { setDebug(`Error: ${e.message}`); setData([]); })
+      .finally(() => setLoading(false));
+  }, [state.user?.cliente_id, state.user?.id]);
+
+  const filtered = useMemo(() => {
+    return data.filter(msg => {
+      if (fDe && !(msg.from_number || '').toLowerCase().includes(fDe.toLowerCase())) return false;
+      if (fPara && !(msg.to_number || '').toLowerCase().includes(fPara.toLowerCase())) return false;
+      if (fDir && msg.direction !== fDir) return false;
+      if (fMsg && !(msg.mensaje || '').toLowerCase().includes(fMsg.toLowerCase())) return false;
+      if (fEst && !(msg.estado || '').toLowerCase().includes(fEst.toLowerCase())) return false;
+      if (fFechaDesde && (!msg.fecha_creacion || (msg.fecha_creacion.split('T')[0] || msg.fecha_creacion) < fFechaDesde)) return false;
+      if (fFechaHasta && (!msg.fecha_creacion || (msg.fecha_creacion.split('T')[0] || msg.fecha_creacion) > fFechaHasta)) return false;
+      return true;
+    });
+  }, [data, fDe, fPara, fDir, fMsg, fEst, fFechaDesde, fFechaHasta]);
+
+  const total = filtered.length;
+  const totalPages = Math.max(1, Math.ceil(total / pageSize));
+  const safePage = Math.min(page, totalPages - 1);
+  const paginated = filtered.slice(safePage * pageSize, (safePage + 1) * pageSize);
 
   return (
     <div id="app">
@@ -50,12 +98,9 @@ export default function HistoryPage() {
             </span>
           </div>
           <section className="section active" style={{ position: 'relative' }}>
+            <div style={{ background: '#fff3cd', border: '1px solid #ffc107', padding: 8, marginBottom: 12, fontSize: 12, borderRadius: 4, wordBreak: 'break-all' }}><strong>Debug:</strong> {debug} | data={data.length} | filtered={filtered.length} | pag={paginated.length} | loading={String(loading)} | fDesde=&#39;{fFechaDesde}&#39; | fHasta=&#39;{fFechaHasta}&#39;</div>
             <div className="header-images">
-              <img
-                src="/Productosasesorias_transp.png"
-                alt=""
-                className="header-logo-pya-decorative"
-              />
+              <img src="/Productosasesorias_transp.png" alt="" className="header-logo-pya-decorative" />
               <div className="header-brand">
                 <svg width="56" height="56" viewBox="0 0 175.216 175.552" style={{ marginBottom: 4 }}>
                   <path fill="#075E54" stroke="#fff" strokeWidth="16" d="M87.184 25.227c-33.733 0-61.166 27.423-61.178 61.13a60.98 60.98 0 0 0 9.349 32.535l1.455 2.312-6.179 22.559 23.146-6.069 2.235 1.324c9.387 5.571 20.15 8.518 31.126 8.524h.023c33.707 0 61.14-27.426 61.153-61.135a60.75 60.75 0 0 0-17.895-43.251 60.75 60.75 0 0 0-43.235-17.929z"/>
@@ -69,29 +114,34 @@ export default function HistoryPage() {
               <p>Consulte el estado de los mensajes enviados</p>
             </div>
             <Card>
-              <div className="toolbar">
-                <span className="toolbar-counter">{state.messages.length} registros</span>
+              <div style={{ display: 'flex', gap: 12, alignItems: 'flex-end', marginBottom: 10, flexWrap: 'wrap' }}>
+                <label style={{ fontSize: 12, display: 'flex', flexDirection: 'column', gap: 2 }}>Desde <input className="col-filter" type="date" value={fFechaDesde} onChange={e => { setFFechaDesde(e.target.value); setPage(0); }} /></label>
+                <label style={{ fontSize: 12, display: 'flex', flexDirection: 'column', gap: 2 }}>Hasta <input className="col-filter" type="date" value={fFechaHasta} onChange={e => { setFFechaHasta(e.target.value); setPage(0); }} /></label>
+                {(fFechaDesde || fFechaHasta) && <button className="btn btn-outline btn-sm" onClick={() => { setFFechaDesde(''); setFFechaHasta(''); setPage(0); }}>Limpiar fechas</button>}
+                <span style={{ fontSize: 12, color: '#667781', marginLeft: 'auto' }}>{total} registros{total !== filtered.length ? ` (filtrados de ${data.length})` : ''}</span>
               </div>
               <div className="table-container">
                 <table className="table">
                   <thead>
                     <tr>
                       <th>ID</th>
-                      <th>De</th>
-                      <th>Para</th>
-                      <th>Dirección</th>
-                      <th>Mensaje</th>
-                      <th>Estado</th>
+                      <th>De<div><input className="col-filter" value={fDe} onChange={e => { setFDe(e.target.value); setPage(0); }} placeholder="Filtrar..." /></div></th>
+                      <th>Para<div><input className="col-filter" value={fPara} onChange={e => { setFPara(e.target.value); setPage(0); }} placeholder="Filtrar..." /></div></th>
+                      <th>Dirección<div><select className="col-filter" value={fDir} onChange={e => { setFDir(e.target.value); setPage(0); }}><option value="">Todas</option><option value="outbound">Saliente</option><option value="inbound">Entrante</option></select></div></th>
+                      <th>Mensaje<div><input className="col-filter" value={fMsg} onChange={e => { setFMsg(e.target.value); setPage(0); }} placeholder="Filtrar..." /></div></th>
+                      <th>Estado<div><input className="col-filter" value={fEst} onChange={e => { setFEst(e.target.value); setPage(0); }} placeholder="Filtrar..." /></div></th>
                       <th>Wamid</th>
                       <th>Fecha</th>
                     </tr>
                   </thead>
                   <tbody>
-                    {state.messages.length === 0 ? (
+                    {loading ? (
+                      <tr><td colSpan={8} className="empty-state">Cargando...</td></tr>
+                    ) : paginated.length === 0 ? (
                       <tr><td colSpan={8} className="empty-state">No hay registros de mensajes</td></tr>
                     ) : (
-                      state.messages.map((msg, i) => (
-                        <tr key={i}>
+                      paginated.map((msg, i) => (
+                        <tr key={msg.id || i}>
                           <td>{msg.id || '-'}</td>
                           <td>{msg.from_number || '-'}</td>
                           <td>{msg.to_number || '-'}</td>
@@ -106,6 +156,16 @@ export default function HistoryPage() {
                   </tbody>
                 </table>
               </div>
+              {total > pageSize && (
+                <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8, marginTop: 12, paddingTop: 10, borderTop: '1px solid var(--border)' }}>
+                  <button className="btn btn-outline btn-sm" disabled={safePage === 0} onClick={() => setPage(p => Math.max(0, p - 1))}>Anterior</button>
+                  {Array.from({ length: totalPages }).map((_, i) => (
+                    <button key={i} className={`btn btn-sm ${i === safePage ? 'btn-primary' : 'btn-outline'}`} style={{ minWidth: 28, padding: '3px 6px' }} onClick={() => setPage(i)}>{i + 1}</button>
+                  ))}
+                  <button className="btn btn-outline btn-sm" disabled={safePage >= totalPages - 1} onClick={() => setPage(p => Math.min(totalPages - 1, p + 1))}>Siguiente</button>
+                  <span style={{ fontSize: 12, color: 'var(--text-secondary)', marginLeft: 8 }}>{total} registros</span>
+                </div>
+              )}
             </Card>
           </section>
         </main>

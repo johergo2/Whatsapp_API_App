@@ -130,8 +130,15 @@ export async function replaceAllProspects(prospects: Omit<Prospecto, 'id'>[], pl
 
 // ─── Mensajes ─────────────────────────────────────
 
-export async function fetchMessages(): Promise<Mensaje[]> {
-  return apiFetch('/api/mensajes');
+export async function fetchMessages(filters?: { page?: number; pageSize?: number; direction?: string; estado?: string; search?: string }): Promise<{ data: Mensaje[]; total: number; page: number; pageSize: number }> {
+  const params = new URLSearchParams();
+  if (filters?.page !== undefined) params.set('page', String(filters.page));
+  if (filters?.pageSize !== undefined) params.set('pageSize', String(filters.pageSize));
+  if (filters?.direction) params.set('direction', filters.direction);
+  if (filters?.estado) params.set('estado', filters.estado);
+  if (filters?.search) params.set('search', filters.search);
+  const qs = params.toString();
+  return apiFetch(`/api/mensajes${qs ? '?' + qs : ''}`);
 }
 
 // ─── Bulk load after login ────────────────────────

@@ -36,7 +36,7 @@
 - [x] GET /api/variables — variables de Meta
 - [x] GET|POST|PUT|DELETE /api/plantillas — CRUD vía API
 - [x] GET|POST|PUT|DELETE /api/prospectos — CRUD vía API (DELETE sin ?id= borra todos)
-- [x] GET /api/mensajes — historial vía API
+- [x] GET /api/mensajes — historial con paginación y filtros (query params: page, pageSize, direction, estado, search)
 - [x] POST /api/send-message — envío de templates
 - [x] POST /api/send-media — envío de imágenes/video
 - [x] GET|POST /api/webhook — webhook Meta
@@ -67,6 +67,13 @@
 - [x] CSV import soporta columna "adjunto cabecera"
 - [x] Dashboard muestra número de WhatsApp (display_number)
 - [x] Estado de envío visible completo y seleccionable
+- [x] Columnas `texto1`–`texto6` en prospectos (DB + tipo + API + CSV import + UI)
+- [x] Texto personalizado por prospecto con fallback a valores por defecto de "Enviar mensajes"
+- [x] Validación de textos por prospecto contra `tpl.num_textos` en import CSV y envío
+- [x] `plantilla_id` y `usuario_id` en prospectos (filtrado por usuario + plantilla)
+- [x] Tabla de prospectos muestra todas las columnas siempre (sin depender de plantilla)
+- [x] Tabla de prospectos vacía cuando no hay plantilla seleccionada
+- [x] Espaciado compacto en tablas (padding `4px 8px`)
 
 ### Base de Datos
 - [x] Esquema SQL con 9 tablas (original + auxiliares + 2 auth)
@@ -100,7 +107,9 @@
 - [ ] Tutorial/onboarding para nuevo usuario
 - [ ] Atajos de teclado
 - [ ] Búsqueda y filtros en tabla de prospectos
-- [ ] Paginación en prospectos e historial
+- [x] Paginación en prospectos (20/página)
+- [x] Paginación en historial (20/página)
+- [x] Filtros por columna en historial (De, Para, Dirección, Mensaje, Estado, Fecha Desde/Hasta)
 - [ ] Selección múltiple de prospectos
 - [ ] Clonación de plantillas
 

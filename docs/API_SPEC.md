@@ -160,11 +160,12 @@ CRUD de plantillas (tabla `plantillas`).
 ### `GET|POST|PUT|DELETE /api/prospectos`
 CRUD de prospectos (tabla `prospectos`).
 
-**Header:** `X-Cliente-Id: 1`
+**Header:** `X-Cliente-Id: 1`, `X-Usuario-Id: 1`
 
-**GET** — Listar todos los prospectos.
+**GET** — Listar prospectos del cliente + usuario autenticados.
+- `?plantilla_id=N` — filtra por plantilla
 
-**POST** — Crear prospecto.
+**POST** — Crear uno o varios prospectos. Si se envía un array, se crean en lote.
 ```json
 {
   "nombre": "Juan Pérez",
@@ -172,22 +173,62 @@ CRUD de prospectos (tabla `prospectos`).
   "adjunto_cabecera": "https://...",
   "footer_imgs": ["https://..."],
   "captions": ["Texto opcional"],
-  "estado": ""
+  "estado": "",
+  "plantilla_id": 1,
+  "texto1": "Valor personalizado",
+  "texto2": "Otro valor",
+  "texto3": "",
+  "texto4": "",
+  "texto5": "",
+  "texto6": ""
 }
 ```
 
-**PUT** — Actualizar prospecto (requiere `id` en body).
+**PUT** — Actualizar prospecto (requiere `id` en body). Acepta los mismos campos que POST.
 
-**DELETE** — Eliminar prospecto.
+**DELETE** — Eliminar prospecto(s).
 - `DELETE /api/prospectos?id=numero` — elimina un prospecto específico
-- `DELETE /api/prospectos` (sin `?id=`) — elimina **todos** los prospectos del cliente autenticado (usado en importación CSV)
+- `DELETE /api/prospectos` (sin `?id=`) — elimina **todos** los prospectos del cliente + usuario autenticados
+- `DELETE /api/prospectos?plantilla_id=N` — elimina todos los prospectos del cliente + usuario + plantilla específica (usado en importación CSV)
 
 ---
 
 ### `GET /api/mensajes`
-Retorna historial de mensajes del cliente autenticado (últimos 200).
+Retorna historial de mensajes del cliente autenticado con paginación y filtros.
 
 **Header:** `X-Cliente-Id: 1`
+
+**Query Params:**
+- `page` (number, default `0`) — número de página (0-indexed)
+- `pageSize` (number, default `200`, max `200`) — registros por página
+- `direction` (`inbound` | `outbound`, opcional) — filtrar por dirección
+- `estado` (string, opcional) — búsqueda parcial en estado
+- `search` (string, opcional) — búsqueda parcial en `from_number`, `to_number` o `mensaje`
+
+**Response (200):**
+```json
+{
+  "data": [
+    {
+      "id": 641,
+      "cliente_id": 2,
+      "from_number": "573136432748",
+      "to_number": "573145650653",
+      "direction": "inbound",
+      "mensaje": "Hola",
+      "wamid": "wamid.HBgM...",
+      "estado": "pending",
+      "timestamp_wa": "2026-07-17T13:15:37",
+      "fecha_creacion": "2026-07-17T13:15:37"
+    }
+  ],
+  "total": 474,
+  "page": 0,
+  "pageSize": 200
+}
+```
+
+**Nota:** El frontend anterior esperaba un array plano; el store y `services.ts` ya extraen `.data` automáticamente.
 
 ---
 

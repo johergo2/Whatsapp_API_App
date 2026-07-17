@@ -18,7 +18,7 @@ El esquema completo está definido en `supabase_migration.sql` en la raíz del p
 | Tabla | Descripción |
 |-------|-------------|
 | `plantillas` | Plantillas de mensaje (nombre interno, nombre Meta, textos, imágenes, `header_type`, `nomb_mio` del remitente) |
-| `prospectos` | Destinatarios con `adjunto_cabecera` (URL del PDF/imagen/video), URLs personalizadas por plantilla y `estado` de envío |
+| `prospectos` | Destinatarios con `adjunto_cabecera` (URL del PDF/imagen/video), URLs personalizadas por plantilla, `estado` de envío, `usuario_id`, `plantilla_id`, y columnas `texto1`–`texto6` para texto personalizado por prospecto |
 
 ### Tablas Adicionales
 
