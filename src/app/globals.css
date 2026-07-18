@@ -559,10 +559,13 @@ body {
 .field-hint { font-size: 13px; color: var(--text-secondary); margin-bottom: 16px; }
 
 /* Scrollbar */
-::-webkit-scrollbar { width: 6px; }
-::-webkit-scrollbar-track { background: transparent; }
-::-webkit-scrollbar-thumb { background: #CCC; border-radius: 3px; }
-::-webkit-scrollbar-thumb:hover { background: #AAA; }
+* { scrollbar-width: thin; scrollbar-color: #CCC transparent; }
+@media (-webkit-min-device-pixel-ratio: 0) {
+  ::-webkit-scrollbar { width: 6px; }
+  ::-webkit-scrollbar-track { background: transparent; }
+  ::-webkit-scrollbar-thumb { background: #CCC; border-radius: 3px; }
+  ::-webkit-scrollbar-thumb:hover { background: #AAA; }
+}
 
 /* Client Selection */
 .client-list {

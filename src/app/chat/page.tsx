@@ -37,6 +37,7 @@ export default function ChatPage() {
   const [usuarios, setUsuarios] = useState<any[]>([]);
   const [showClosed, setShowClosed] = useState(false);
   const [uploading, setUploading] = useState(false);
+  const [isMobile, setIsMobile] = useState(false);
   const [convPage, setConvPage] = useState(0);
   const [convTotal, setConvTotal] = useState(0);
   const [loadingMore, setLoadingMore] = useState(false);
@@ -118,6 +119,14 @@ export default function ChatPage() {
       }
     } catch {}
   }, [clienteId]);
+
+  useEffect(() => {
+    const mq = window.matchMedia('(max-width: 767px)');
+    const handler = (e: MediaQueryListEvent | MediaQueryList) => setIsMobile(e.matches);
+    handler(mq);
+    mq.addEventListener('change', handler);
+    return () => mq.removeEventListener('change', handler);
+  }, []);
 
   useEffect(() => { loadConversations(); }, [loadConversations]);
 
@@ -274,7 +283,7 @@ export default function ChatPage() {
 
   function selectConversation(tel: string) {
     setSelectedTel(tel);
-    if (typeof window !== 'undefined' && window.innerWidth < 768) setMobileView('chat');
+    if (isMobile) setMobileView('chat');
     if (clienteId && usuarioId) {
       fetch(`/api/chat/${encodeURIComponent(tel)}`, {
         method: 'PATCH',
@@ -322,7 +331,7 @@ export default function ChatPage() {
 
           <div style={{ display: 'flex', height: 'calc(100vh - 100px)', overflow: 'hidden', position: 'relative' }}>
             {/* Panel izquierdo: lista de conversaciones */}
-            <div className={`chat-list ${mobileView === 'list' ? '' : 'mobile-hidden'}`}>
+            <div className="chat-list" style={{ display: (!isMobile || mobileView === 'list') ? 'flex' : 'none' }}>
               <div style={{ padding: '8px 12px', borderBottom: '1px solid var(--border)' }}>
                 <input
                   type="text"
@@ -398,7 +407,7 @@ export default function ChatPage() {
             </div>
 
             {/* Panel derecho: conversación */}
-            <div className={`chat-conversation ${mobileView === 'chat' ? '' : 'mobile-hidden'}`}>
+            <div className="chat-conversation" style={{ display: (!isMobile || mobileView === 'chat') ? 'flex' : 'none' }}>
               {!selectedTel ? (
                 <div style={{ flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#667781', fontSize: 14 }}>
                   Selecciona una conversación
@@ -406,8 +415,13 @@ export default function ChatPage() {
               ) : (
                 <>
                   <div style={{ padding: '8px 14px', borderBottom: '1px solid var(--border)', display: 'flex', alignItems: 'center', gap: 10 }}>
-                    {typeof window !== 'undefined' && window.innerWidth < 768 && (
+                    {isMobile && (
                       <button className="btn btn-outline btn-sm" onClick={() => { setMobileView('list'); setSelectedTel(null); }}>←</button>
+                    )}
+                    {isMobile && (
+                      <button className="btn-icon sidebar-toggle" onClick={() => document.getElementById('sidebar')?.classList.toggle('open')} style={{ background: 'none', border: 'none', cursor: 'pointer', padding: 4, fontSize: 18 }}>
+                        ☰
+                      </button>
                     )}
                     <div style={{ flex: 1, minWidth: 0 }}>
                       <strong style={{ fontSize: 14 }}>{selectedConv?.nombre || selectedTel}</strong>
@@ -538,7 +552,7 @@ export default function ChatPage() {
         .chat-list-item.chat-unread.active { background: #d8f0d8; }
         @media (max-width: 767px) {
           .chat-list { width: 100%; }
-          .mobile-hidden { display: none !important; }
+          .chat-conversation { width: 100%; }
         }
       `}</style>
     </div>
