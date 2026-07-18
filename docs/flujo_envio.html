@@ -1,0 +1,190 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Flujo de Envío — Mercurio Software</title>
+<style>
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  body { font-family: 'Segoe UI', Arial, sans-serif; background: #f0f2f5; padding: 30px; color: #333; }
+  h1 { text-align: center; margin-bottom: 6px; font-size: 22px; color: #075E54; }
+  .subtitle { text-align: center; margin-bottom: 30px; color: #667781; font-size: 14px; }
+  .container { max-width: 1100px; margin: 0 auto; }
+  .row { display: flex; gap: 20px; margin-bottom: 30px; justify-content: center; }
+  .box { background: #fff; border-radius: 10px; padding: 16px 20px; box-shadow: 0 2px 8px rgba(0,0,0,.08); border-left: 4px solid; min-width: 180px; flex: 1; max-width: 280px; }
+  .box h3 { font-size: 13px; margin-bottom: 6px; text-transform: uppercase; letter-spacing: .5px; }
+  .box p, .box li { font-size: 12px; color: #555; line-height: 1.5; }
+  .box ul { padding-left: 16px; margin-top: 4px; }
+  .box ul li { margin-bottom: 2px; }
+  .badge { display: inline-block; padding: 1px 8px; border-radius: 10px; font-size: 10px; font-weight: 600; margin-bottom: 8px; }
+  .ui { border-left-color: #1565c0; } .ui .badge { background: #e3f2fd; color: #1565c0; }
+  .api { border-left-color: #e65100; } .api .badge { background: #fff3e0; color: #e65100; }
+  .meta { border-left-color: #2e7d32; } .meta .badge { background: #e8f5e9; color: #2e7d32; }
+  .db { border-left-color: #6a1b9a; } .db .badge { background: #f3e5f5; color: #6a1b9a; }
+  .arrow { display: flex; align-items: center; color: #999; font-size: 22px; padding: 0 4px; flex-shrink: 0; }
+  .arrow-label { font-size: 9px; color: #999; text-align: center; writing-mode: vertical-lr; text-orientation: mixed; }
+  .section-title { font-size: 15px; font-weight: 600; color: #075E54; margin: 30px 0 14px; padding-bottom: 6px; border-bottom: 2px solid #075E54; }
+  .flow-row { display: flex; align-items: center; gap: 10px; margin-bottom: 20px; flex-wrap: wrap; justify-content: center; }
+  .flow-row .box { min-width: 150px; max-width: 220px; flex: 0 1 auto; }
+  .db-detail { margin-top: 40px; }
+  table { width: 100%; border-collapse: collapse; font-size: 12px; margin-bottom: 16px; }
+  th { background: #075E54; color: #fff; padding: 8px 10px; text-align: left; font-weight: 600; }
+  td { padding: 6px 10px; border-bottom: 1px solid #e0e0e0; }
+  tr:nth-child(even) td { background: #fafafa; }
+  .col-name { font-family: 'Consolas', monospace; font-weight: 600; color: #1565c0; }
+  .note { font-size: 11px; color: #667781; font-style: italic; margin-bottom: 20px; }
+  .inline-code { font-family: Consolas, monospace; background: #f5f5f5; padding: 1px 5px; border-radius: 3px; font-size: 11px; }
+  @media (max-width: 768px) { .row { flex-direction: column; align-items: stretch; } .flow-row { flex-direction: column; } .arrow { transform: rotate(90deg); } }
+</style>
+</head>
+<body>
+<div class="container">
+
+<h1>Flujo de Envío de Mensajes</h1>
+<p class="subtitle">Arquitectura del sistema — Mercurio Software</p>
+
+<!-- ─── LEYENDA ─── -->
+<div class="row">
+  <div class="box ui"><span class="badge">UI</span><h3>Frontend</h3><p>React / Next.js (navegador)</p></div>
+  <div class="box api"><span class="badge">API</span><h3>API Routes</h3><p>Next.js serverless functions</p></div>
+  <div class="box meta"><span class="badge">Meta</span><h3>Meta Cloud API</h3><p>WhatsApp Business API</p></div>
+  <div class="box db"><span class="badge">DB</span><h3>Supabase</h3><p>PostgreSQL</p></div>
+</div>
+
+<!-- ─── FLUJO 1: IMPORT CSV ─── -->
+<div class="section-title">1. Importar CSV</div>
+<div class="flow-row">
+  <div class="box ui"><h3>📄 Subir CSV</h3><p>Prospects page<br>Parseo + validación client-side</p></div>
+  <div class="arrow">→</div>
+  <div class="box api"><h3>POST /api/prospectos</h3><p>Bulk insert (array)</p></div>
+  <div class="arrow">→</div>
+  <div class="box db"><h3>prospectos</h3><p>INSERT batch<br><span class="inline-code">nombre</span>, <span class="inline-code">telefono</span>, <span class="inline-code">texto1..6</span>, <span class="inline-code">plantilla_id</span></p></div>
+</div>
+
+<!-- ─── FLUJO 2: ENVIAR DESDE PROSPECTOS ─── -->
+<div class="section-title">2. Enviar desde Prospectos</div>
+<div class="flow-row">
+  <div class="box ui"><h3>✅ Seleccionar + Enviar</h3><p>Itera prospectos<br>Paralelo (fetch por cada uno)</p></div>
+  <div class="arrow">→</div>
+  <div class="box api"><h3>POST /api/send-message</h3><p>Por cada prospecto</p></div>
+  <div class="arrow">→</div>
+  <div class="box db"><h3>clientes_whatsapp</h3><p>Obtiene <span class="inline-code">phone_number_id</span></p></div>
+  <div class="arrow">→</div>
+  <div class="box db"><h3>variables_whatsapp</h3><p>Obtiene <span class="inline-code">META_TOKEN</span></p></div>
+  <div class="arrow">→</div>
+  <div class="box meta"><h3>📤 Template Message</h3><p>POST a Graph API</p></div>
+</div>
+<div class="flow-row">
+  <div class="box meta"><h3>Respuesta</h3><p><span class="inline-code">{ wamid }</span></p></div>
+  <div class="arrow">→</div>
+  <div class="box db"><h3>mensajes_whatsapp</h3><p>INSERT (outbound)<br><span class="inline-code">direction='outbound'</span></p></div>
+  <div class="arrow">→</div>
+  <div class="box db"><h3>clientes_whatsapp</h3><p>RPC: incrementar<br><span class="inline-code">requests_usadas</span></p></div>
+</div>
+
+<!-- ─── FLUJO 3: ENVIAR DESDE PÁGINA ENVIAR ─── -->
+<div class="section-title">3. Enviar desde página "Enviar Mensajes"</div>
+<div class="flow-row">
+  <div class="box ui"><h3>✏️ Llenar campos</h3><p>Agrega valores por defecto</p></div>
+  <div class="arrow">→</div>
+  <div class="box api"><h3>POST /api/send-form-data</h3><p>Upsert</p></div>
+  <div class="arrow">→</div>
+  <div class="box db"><h3>send_form_data</h3><p><span class="inline-code">values_json</span> guardado</p></div>
+</div>
+<div class="flow-row">
+  <div class="box ui"><h3>📨 Click enviar</h3></div>
+  <div class="arrow">→</div>
+  <div class="box api"><h3>POST /api/send-message</h3><p>Mismo endpoint que prospectos</p></div>
+  <div class="arrow">→</div>
+  <div class="box meta"><h3>📤 Template Message</h3></div>
+  <div class="arrow">→</div>
+  <div class="box db"><h3>mensajes_whatsapp</h3><p>INSERT (outbound)</p></div>
+</div>
+
+<!-- ─── FLUJO 4: WEBHOOK ─── -->
+<div class="section-title">4. Webhook de Meta (mensajes entrantes + estados)</div>
+<div class="flow-row">
+  <div class="box meta"><h3>📩 Status update</h3><p>Meta envía:<br><span class="inline-code">delivered / read / failed</span></p></div>
+  <div class="arrow">→</div>
+  <div class="box api"><h3>POST /api/webhook</h3></div>
+  <div class="arrow">→</div>
+  <div class="box db"><h3>mensajes_whatsapp</h3><p>UPDATE <span class="inline-code">estado</span><br>WHERE <span class="inline-code">wamid = ?</span></p></div>
+  <div class="arrow">→</div>
+  <div class="box db"><h3>estado_mensajes_whatsapp</h3><p>INSERT historial</p></div>
+</div>
+<div class="flow-row">
+  <div class="box meta"><h3>💬 Mensaje entrante</h3><p>Alguien escribe al número</p></div>
+  <div class="arrow">→</div>
+  <div class="box api"><h3>POST /api/webhook</h3></div>
+  <div class="arrow">→</div>
+  <div class="box db"><h3>mensajes_whatsapp</h3><p>INSERT (inbound)<br><span class="inline-code">direction='inbound'</span></p></div>
+  <div class="arrow">→</div>
+  <div class="box db"><h3>contactos_whatsapp</h3><p>UPSERT contacto</p></div>
+</div>
+
+<!-- ─── FLUJO 5: HISTORIAL ─── -->
+<div class="section-title">5. Consultar Historial</div>
+<div class="flow-row">
+  <div class="box ui"><h3>📋 History page</h3><p>Paginación + filtros<br>client-side via useMemo</p></div>
+  <div class="arrow">→</div>
+  <div class="box api"><h3>GET /api/mensajes</h3><p><span class="inline-code">?page=&amp;pageSize=&amp;direction=&amp;estado=&amp;search=</span></p></div>
+  <div class="arrow">→</div>
+  <div class="box db"><h3>mensajes_whatsapp</h3><p>SELECT con filtros<br>Order by fecha_creacion DESC<br>Range (page × pageSize)</p></div>
+  <div class="arrow">→</div>
+  <div class="box api"><h3>Response</h3><p><span class="inline-code">{ data, total, page, pageSize }</span></p></div>
+</div>
+
+<!-- ─── TABLAS BD ─── -->
+<div class="db-detail">
+<div class="section-title">Tablas de Base de Datos</div>
+
+<table>
+<tr><th style="width:180px">Tabla</th><th>Campos clave</th><th>Uso en el flujo</th></tr>
+<tr>
+  <td class="col-name">clientes_whatsapp</td>
+  <td><span class="inline-code">id</span>, <span class="inline-code">phone_number_id</span>, <span class="inline-code">display_number</span>, <span class="inline-code">requests_max</span>, <span class="inline-code">requests_usadas</span></td>
+  <td>Obtener datos del remitente; incrementar contador al enviar</td>
+</tr>
+<tr>
+  <td class="col-name">variables_whatsapp</td>
+  <td><span class="inline-code">variable</span>, <span class="inline-code">valor</span></td>
+  <td>Obtener <span class="inline-code">META_TOKEN</span> para autenticar contra Meta API</td>
+</tr>
+<tr>
+  <td class="col-name">plantillas</td>
+  <td><span class="inline-code">template_name</span>, <span class="inline-code">num_textos</span>, <span class="inline-code">header_type</span>, <span class="inline-code">nomb_mio</span></td>
+  <td>Plantilla registrada en Meta; define estructura del mensaje</td>
+</tr>
+<tr>
+  <td class="col-name">prospectos</td>
+  <td><span class="inline-code">nombre</span>, <span class="inline-code">telefono</span>, <span class="inline-code">texto1..6</span>, <span class="inline-code">adjunto_cabecera</span>, <span class="inline-code">estado</span>, <span class="inline-code">plantilla_id</span>, <span class="inline-code">usuario_id</span></td>
+  <td>Destinatarios importados; cada uno puede tener textos personalizados</td>
+</tr>
+<tr>
+  <td class="col-name">mensajes_whatsapp</td>
+  <td><span class="inline-code">cliente_id</span>, <span class="inline-code">from_number</span>, <span class="inline-code">to_number</span>, <span class="inline-code">direction</span>, <span class="inline-code">mensaje</span>, <span class="inline-code">wamid</span>, <span class="inline-code">estado</span>, <span class="inline-code">fecha_creacion</span></td>
+  <td>Historial central: outbound (enviados) + inbound (recibidos)</td>
+</tr>
+<tr>
+  <td class="col-name">estado_mensajes_whatsapp</td>
+  <td><span class="inline-code">mensaje_id</span>, <span class="inline-code">wamid</span>, <span class="inline-code">estado</span>, <span class="inline-code">error_code</span>, <span class="inline-code">error_detail</span></td>
+  <td>Historial de cambios de estado (delivered, read, failed)</td>
+</tr>
+<tr>
+  <td class="col-name">contactos_whatsapp</td>
+  <td><span class="inline-code">telefono</span>, <span class="inline-code">nombre</span>, <span class="inline-code">chatwoot_conversation_id</span></td>
+  <td>Contactos que han escrito al número (se crean desde webhook)</td>
+</tr>
+<tr>
+  <td class="col-name">send_form_data</td>
+  <td><span class="inline-code">plantilla_id</span>, <span class="inline-code">values_json</span></td>
+  <td>Valores por defecto guardados desde la página "Enviar"</td>
+</tr>
+</table>
+
+<p class="note">Orden de resolución de textos: <b>prospecto.textoN</b> → <b>send_form_data.values_json.textoN</b> → <b>''</b> (vacío)</p>
+
+</div>
+</div>
+</body>
+</html>

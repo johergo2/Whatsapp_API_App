@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { getServerSupabase } from '@/lib/supabase';
+import { getUsuarioId } from '@/lib/auth-utils';
 
 export async function POST(req: NextRequest) {
   try {
@@ -7,12 +8,15 @@ export async function POST(req: NextRequest) {
     const {
       cliente_id, to, template_name, language_code,
       nombre_clie, nomb_mio, header_image_url, header_document_url, header_video_url,
+      usuario_id: bodyUsuarioId,
       ...texts
     } = body;
 
     if (!cliente_id || !to || !template_name) {
       return NextResponse.json({ detail: 'cliente_id, to y template_name son obligatorios' }, { status: 400 });
     }
+
+    const usuarioId = bodyUsuarioId || getUsuarioId(req);
 
     const supabase = getServerSupabase();
 
@@ -127,7 +131,38 @@ export async function POST(req: NextRequest) {
 
     await supabase.from('mensajes_whatsapp').insert(insertPayload);
 
-    // 6. Increment requests_usadas
+    // 6. Upsert chat_whatsapp
+    const now = new Date().toISOString();
+    const { data: existingChat } = await supabase
+      .from('chat_whatsapp')
+      .select('id, nombre')
+      .eq('cliente_id', cliente_id)
+      .eq('telefono', to)
+      .maybeSingle();
+
+    if (existingChat) {
+      await supabase.from('chat_whatsapp').update({
+        usuario_id: usuarioId || undefined,
+        nombre: nombre_clie || existingChat.nombre,
+        ultimo_mensaje: `template: ${template_name}`,
+        ultima_fecha: now,
+        fecha_actualizacion: now,
+      }).eq('id', existingChat.id);
+    } else {
+      await supabase.from('chat_whatsapp').insert({
+        cliente_id,
+        telefono: to,
+        nombre: nombre_clie || to,
+        usuario_id: usuarioId || undefined,
+        usuario_creador_id: usuarioId || undefined,
+        ultimo_mensaje: `template: ${template_name}`,
+        ultima_fecha: now,
+        no_leidos: 0,
+        estado: 'activa',
+      });
+    }
+
+    // 7. Increment requests_usadas
     await supabase.rpc('increment_requests_usadas', { p_cliente_id: cliente_id });
 
     return NextResponse.json(metaResponse);

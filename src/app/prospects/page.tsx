@@ -385,6 +385,7 @@ export default function ProspectsPage() {
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({
             cliente_id: state.cliente?.id,
+            usuario_id: state.user?.id,
             to: prospect.telefono,
             template_name: tpl!.template_name,
             language_code: tpl!.language_code,
@@ -416,8 +417,9 @@ export default function ProspectsPage() {
           try { await updateProspect(updated as Prospecto & { id: number }); } catch {}
         }
       }
-      setLogs((prev) => [...prev, ...newLogs]);
+      const batch = newLogs;
       newLogs = [];
+      setLogs((prev) => [...prev, ...batch]);
       setProgressPct(Math.round(((i + 1) / targets.length) * 100));
       if (i < targets.length - 1) await new Promise((r) => setTimeout(r, 1000));
     }

@@ -175,3 +175,13 @@ PROXIMOS PASOS (ACTUALIZADO 17/07/2026)
 - Validacion de formato de telefono
 - Tests unitarios y de integracion
 - Retirar debug amarillo de History page
+
+============================================================
+FLUJO_ENVIO.md: DIAGRAMA DE FLUJO DE MENSAJES (17/07/2026)
+============================================================
+
+- Creado docs/FLUJO_ENVIO.md con diagrama Mermaid del flujo completo
+- Incluye: Import CSV, Envio desde Prospectos, Envio desde pagina Enviar,
+  Webhook (inbound + status), Historial
+- Tablas y campos involucrados detallados
+- Orden de resolucion de textos (prospecto > send_form_data > vacio)

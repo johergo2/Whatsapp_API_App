@@ -1,10 +1,11 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { getServerSupabase } from '@/lib/supabase';
+import { getUsuarioId } from '@/lib/auth-utils';
 
 export async function POST(req: NextRequest) {
   try {
     const body = await req.json();
-    const { cliente_id, to, image_url, video_url, mensaje, caption } = body;
+    const { cliente_id, to, image_url, video_url, mensaje, caption, usuario_id: bodyUsuarioId } = body;
 
     if (!cliente_id || !to) {
       return NextResponse.json({ detail: 'cliente_id y to son obligatorios' }, { status: 400 });
@@ -82,6 +83,7 @@ export async function POST(req: NextRequest) {
 
     // 4. Save to mensajes_whatsapp
     const wamid = metaResponse?.messages?.[0]?.id || null;
+    const now = new Date().toISOString();
     await supabase.from('mensajes_whatsapp').insert({
       cliente_id,
       from_number: displayNumber,
@@ -90,11 +92,50 @@ export async function POST(req: NextRequest) {
       mensaje: mensajeGuardar,
       wamid,
       estado: 'sent',
-      timestamp_wa: new Date().toISOString(),
+      timestamp_wa: now,
       raw_payload: metaResponse,
     });
 
-    // 5. Increment requests_usadas
+    // 5. Upsert chat_whatsapp
+    const usuarioId = bodyUsuarioId || getUsuarioId(req);
+    const { data: existingChat } = await supabase
+      .from('chat_whatsapp')
+      .select('id')
+      .eq('cliente_id', cliente_id)
+      .eq('telefono', to)
+      .maybeSingle();
+
+    if (existingChat) {
+      await supabase.from('chat_whatsapp').update({
+        usuario_id: usuarioId || undefined,
+        ultimo_mensaje: mensajeGuardar,
+        ultima_fecha: now,
+        fecha_actualizacion: now,
+      }).eq('id', existingChat.id);
+    } else {
+      await supabase.from('chat_whatsapp').insert({
+        cliente_id,
+        telefono: to,
+        nombre: to,
+        usuario_id: usuarioId || undefined,
+        usuario_creador_id: usuarioId || undefined,
+        ultimo_mensaje: mensajeGuardar,
+        ultima_fecha: now,
+        no_leidos: 0,
+        estado: 'activa',
+      });
+    }
+
+    // 6. Limpiar archivo temporal de Storage
+    const urlToClean = image_url || video_url || '';
+    if (urlToClean && urlToClean.includes('/storage/v1/object/public/chat_uploads/')) {
+      const filePath = urlToClean.split('/public/chat_uploads/')[1];
+      if (filePath) {
+        await supabase.storage.from('chat_uploads').remove([filePath]);
+      }
+    }
+
+    // 7. Increment requests_usadas
     await supabase.rpc('increment_requests_usadas', { p_cliente_id: cliente_id });
 
     return NextResponse.json(metaResponse);

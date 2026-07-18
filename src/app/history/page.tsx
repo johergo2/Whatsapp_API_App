@@ -30,32 +30,17 @@ export default function HistoryPage() {
   const [fFechaDesde, setFFechaDesde] = useState('');
   const [fFechaHasta, setFFechaHasta] = useState('');
 
-  const [debug, setDebug] = useState('');
-
   useEffect(() => {
     const cId = state.user?.cliente_id;
     const uId = state.user?.id;
-    if (!cId || !uId) { setDebug('No user or cliente_id'); return; }
-    setDebug(`Fetching con cliente_id=${cId}, usuario_id=${uId}...`);
+    if (!cId || !uId) return;
     setLoading(true);
     fetch('/api/mensajes', {
       headers: { 'X-Cliente-Id': String(cId), 'X-Usuario-Id': String(uId) },
     })
-      .then(async r => {
-        if (!r.ok) { setDebug(`Error HTTP ${r.status}`); return { data: [] }; }
-        const text = await r.text();
-        try {
-          const j = JSON.parse(text);
-          const arr = j.data || [];
-          setDebug(`OK: ${arr.length} registros. data=${JSON.stringify(arr).slice(0, 200)}`);
-          return j;
-        } catch {
-          setDebug(`No JSON: ${text.slice(0, 200)}`);
-          return { data: [] };
-        }
-      })
+      .then(r => r.ok ? r.json() : { data: [] })
       .then(j => { setData(j.data || []); })
-      .catch(e => { setDebug(`Error: ${e.message}`); setData([]); })
+      .catch(() => setData([]))
       .finally(() => setLoading(false));
   }, [state.user?.cliente_id, state.user?.id]);
 
@@ -98,7 +83,7 @@ export default function HistoryPage() {
             </span>
           </div>
           <section className="section active" style={{ position: 'relative' }}>
-            <div style={{ background: '#fff3cd', border: '1px solid #ffc107', padding: 8, marginBottom: 12, fontSize: 12, borderRadius: 4, wordBreak: 'break-all' }}><strong>Debug:</strong> {debug} | data={data.length} | filtered={filtered.length} | pag={paginated.length} | loading={String(loading)} | fDesde=&#39;{fFechaDesde}&#39; | fHasta=&#39;{fFechaHasta}&#39;</div>
+
             <div className="header-images">
               <img src="/Productosasesorias_transp.png" alt="" className="header-logo-pya-decorative" />
               <div className="header-brand">

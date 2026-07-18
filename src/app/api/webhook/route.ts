@@ -138,6 +138,36 @@ export async function POST(req: NextRequest) {
           raw_payload: payload,
         });
 
+        // Upsert chat_whatsapp
+        const now = new Date().toISOString();
+        const { data: existingConv } = await supabase
+          .from('chat_whatsapp')
+          .select('id, usuario_id, nombre, no_leidos')
+          .eq('cliente_id', clienteId)
+          .eq('telefono', fromNumber)
+          .maybeSingle();
+
+        if (existingConv) {
+          await supabase.from('chat_whatsapp').update({
+            ultimo_mensaje: mensajeText,
+            ultima_fecha: now,
+            no_leidos: (existingConv.no_leidos || 0) + 1,
+            fecha_actualizacion: now,
+          }).eq('id', existingConv.id);
+        } else {
+          await supabase.from('chat_whatsapp').insert({
+            cliente_id: clienteId,
+            telefono: fromNumber,
+            nombre: fromNumber,
+            usuario_id: null,
+            usuario_creador_id: null,
+            ultimo_mensaje: mensajeText,
+            ultima_fecha: now,
+            no_leidos: 1,
+            estado: 'activa',
+          });
+        }
+
         // Sync to Chatwoot if configured
         if (chatwootAccountId && inboxId && chatwootApiToken) {
           try {

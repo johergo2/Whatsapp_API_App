@@ -14,6 +14,7 @@ export async function GET(req: NextRequest) {
   const supabase = getServerSupabase();
   const { searchParams } = new URL(req.url);
   const plantillaId = searchParams.get('plantilla_id');
+  const search = searchParams.get('search');
 
   let query = supabase
     .from('prospectos')
@@ -23,6 +24,11 @@ export async function GET(req: NextRequest) {
 
   if (plantillaId) {
     query = query.eq('plantilla_id', parseInt(plantillaId, 10));
+  }
+
+  if (search && search.trim()) {
+    const s = `%${search.trim()}%`;
+    query = query.or(`nombre.ilike.${s},telefono.ilike.${s}`);
   }
 
   const { data, error } = await query.order('created_at', { ascending: false });
