@@ -79,8 +79,8 @@ export default function ProspectsPage() {
     setEditIdx(-1);
     setEditName('');
     setEditPhone('');
-    setEditAdjunto('');
-    setEditFooterImgs([]);
+    setEditAdjunto(tpl?.header_type !== 'none' ? (defaults.adjunto_cabecera || '') : '');
+    setEditFooterImgs(tpl ? Array.from({ length: tpl.num_footer }).map((_, i) => (defaults as any)[`footer_url${i + 1}`] || '') : []);
     setEditTextos(tpl ? [1,2,3,4,5,6].map(i => (defaults as any)[`texto${i}`] || '') : []);
     setModalOpen(true);
   }
@@ -389,6 +389,7 @@ export default function ProspectsPage() {
             to: prospect.telefono,
             template_name: tpl!.template_name,
             language_code: tpl!.language_code,
+            header_type: tpl!.header_type,
             nombre_clie: prospect.nombre,
             nomb_mio: tpl!.nomb_mio || state.cliente?.nombre_comercial || '',
             header_image_url: prospect.adjunto_cabecera || saved.adjunto_cabecera || '',
@@ -401,13 +402,45 @@ export default function ProspectsPage() {
           }),
         });
         if (!res.ok) throw new Error(await res.text());
-        newLogs.push(`✓ ${prospect.nombre}`);
+        newLogs.push(`✓ Plantilla enviada a ${prospect.nombre}`);
+        sent++;
+
+        // Enviar imágenes de footer como mensajes separados
+        const footerImages = prospect.footer_imgs || [];
+        const numFooter = tpl?.num_footer || 0;
+        for (let fi = 0; fi < numFooter; fi++) {
+          const imgName = footerImages[fi] || saved[`footer_url${fi + 1}`] || '';
+          if (!imgName) continue;
+          await new Promise((r) => setTimeout(r, 3000));
+          const caption = (prospect.captions && prospect.captions[fi]) || saved[`caption${fi + 1}`] || '';
+          try {
+            const mediaRes = await fetch('/api/send-media', {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify({
+                cliente_id: state.cliente?.id,
+                usuario_id: state.user?.id,
+                to: prospect.telefono,
+                image_url: imgName,
+                caption: caption || undefined,
+              }),
+            });
+            if (mediaRes.ok) {
+              newLogs.push(`  ✓ Imagen ${fi + 1} enviada a ${prospect.nombre}`);
+            } else {
+              const errText = await mediaRes.text();
+              newLogs.push(`  ✗ Imagen ${fi + 1} ${prospect.nombre}: ${errText}`);
+            }
+          } catch (e2: any) {
+            newLogs.push(`  ✗ Imagen ${fi + 1} ${prospect.nombre}: ${e2.message}`);
+          }
+        }
+
         if (idx >= 0) {
           const updated = { ...state.prospects[idx], estado: '✅ Enviado' };
           dispatch({ type: 'UPDATE_PROSPECT', payload: { index: idx, data: updated } });
           try { await updateProspect(updated as Prospecto & { id: number }); } catch {}
         }
-        sent++;
       } catch (e: any) {
         const errMsg = e.message || 'Error desconocido';
         newLogs.push(`✗ ${prospect.nombre}: ${errMsg}`);
@@ -555,19 +588,19 @@ export default function ProspectsPage() {
             <Card>
               <div className="table-container">
                 <table className="table">
-                  <thead id="prospects-table-head">
+                    <thead id="prospects-table-head">
                     <tr id="prospects-header-row">
                       <th>Nombre</th>
                       <th>Teléfono</th>
                       <th>Adjunto Cabecera</th>
-                      {[1,2,3,4,5,6].map(j => (
-                        <th key={`t${j}`} style={{ fontSize: 11, minWidth: 100 }}>Texto{j}</th>
-                      ))}
                       {[1,2,3,4].map(j => (
                         <React.Fragment key={j}>
-                          <th style={{ minWidth: 120 }}>URL img {j}</th>
+                          <th style={{ minWidth: 100 }}>Img {j}</th>
                           <th style={{ width: 44, textAlign: 'center' }}>✏️</th>
                         </React.Fragment>
+                      ))}
+                      {[1,2,3,4,5,6].map(j => (
+                        <th key={`t${j}`} style={{ fontSize: 11, minWidth: 100 }}>Texto{j}</th>
                       ))}
                       <th>Estado</th>
                       <th>Acciones</th>
@@ -589,13 +622,39 @@ export default function ProspectsPage() {
                           <td>{p.telefono}</td>
                           <td>
                             <input
-                              type="url"
+                              type="text"
                               className="cell-input"
                               value={p.adjunto_cabecera || (tpl ? defaults.adjunto_cabecera : '') || ''}
                               onChange={(e) => updateField(fullIdx, 'adjunto_cabecera', e.target.value)}
-                              placeholder="URL adjunto"
+                              placeholder="Nombre archivo"
                             />
                           </td>
+                          {[1,2,3,4].map(j => {
+                            const imgIdx = j - 1;
+                            return (
+                              <React.Fragment key={j}>
+                                <td>
+                                  <input
+                                    type="text"
+                                    className="cell-input"
+                                    value={(p.footer_imgs && p.footer_imgs[imgIdx]) || (tpl ? defaults[`footer_url${j}`] : '') || ''}
+                                    onChange={(e) => {
+                                      const imgs = [...(p.footer_imgs || [])];
+                                      imgs[imgIdx] = e.target.value;
+                                      const updated = { ...p, footer_imgs: imgs };
+                                      dispatch({ type: 'UPDATE_PROSPECT', payload: { index: fullIdx, data: updated } });
+                                    }}
+                                    placeholder={`Nombre img ${j}`}
+                                  />
+                                </td>
+                                <td className="caption-cell">
+                                  <button className="btn-icon" onClick={() => openCaption(fullIdx, imgIdx)} title="Editar texto de imagen">
+                                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M11 4H4a2 2 0 00-2 2v14a2 2 0 002 2h14a2 2 0 002-2v-7" /><path d="M18.5 2.5a2.121 2.121 0 013 3L12 15l-4 1 1-4 9.5-9.5z" /></svg>
+                                  </button>
+                                </td>
+                              </React.Fragment>
+                            );
+                          })}
                           {[1,2,3,4,5,6].map(j => {
                             const key = `texto${j}`;
                             return (
@@ -611,32 +670,6 @@ export default function ProspectsPage() {
                                   placeholder={`Texto ${j}`}
                                 />
                               </td>
-                            );
-                          })}
-                          {[1,2,3,4].map(j => {
-                            const imgIdx = j - 1;
-                            return (
-                              <React.Fragment key={j}>
-                                <td>
-                                  <input
-                                    type="url"
-                                    className="cell-input"
-                                    value={(p.footer_imgs && p.footer_imgs[imgIdx]) || (tpl ? defaults[`footer_url${j}`] : '') || ''}
-                                    onChange={(e) => {
-                                      const imgs = [...(p.footer_imgs || [])];
-                                      imgs[imgIdx] = e.target.value;
-                                      const updated = { ...p, footer_imgs: imgs };
-                                      dispatch({ type: 'UPDATE_PROSPECT', payload: { index: fullIdx, data: updated } });
-                                    }}
-                                    placeholder={`URL img ${j}`}
-                                  />
-                                </td>
-                                <td className="caption-cell">
-                                  <button className="btn-icon" onClick={() => openCaption(fullIdx, imgIdx)} title="Editar texto de imagen">
-                                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M11 4H4a2 2 0 00-2 2v14a2 2 0 002 2h14a2 2 0 002-2v-7" /><path d="M18.5 2.5a2.121 2.121 0 013 3L12 15l-4 1 1-4 9.5-9.5z" /></svg>
-                                  </button>
-                                </td>
-                              </React.Fragment>
                             );
                           })}
                           <td className="status-cell" dangerouslySetInnerHTML={{ __html: renderStatusCell(p.estado) }} />
@@ -751,23 +784,23 @@ export default function ProspectsPage() {
               </div>
               {tpl?.header_type !== 'none' && (
                 <div className="form-group">
-                  <label>URL adjunto cabecera</label>
-                  <input type="url" value={editAdjunto} onChange={(e) => setEditAdjunto(e.target.value)} placeholder="https://..." />
+                  <label>Adjunto cabecera</label>
+                  <input type="text" value={editAdjunto} onChange={(e) => setEditAdjunto(e.target.value)} placeholder="Nombre del archivo" />
                 </div>
               )}
               {tpl &&
                 Array.from({ length: tpl.num_footer }).map((_, i) => (
                   <div className="form-group" key={i}>
-                    <label>URL imagen {i + 1}</label>
+                    <label>Imagen {i + 1}</label>
                     <input
-                      type="url"
+                      type="text"
                       value={editFooterImgs[i] || ''}
                       onChange={(e) => {
                         const imgs = [...editFooterImgs];
                         imgs[i] = e.target.value;
                         setEditFooterImgs(imgs);
                       }}
-                      placeholder="https://..."
+                      placeholder="Nombre del archivo"
                     />
                   </div>
                 ))}

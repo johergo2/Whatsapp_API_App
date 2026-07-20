@@ -6,7 +6,7 @@ export async function POST(req: NextRequest) {
   try {
     const body = await req.json();
     const {
-      cliente_id, to, template_name, language_code,
+      cliente_id, to, template_name, language_code, header_type,
       nombre_clie, nomb_mio, header_image_url, header_document_url, header_video_url,
       usuario_id: bodyUsuarioId,
       ...texts
@@ -63,25 +63,33 @@ export async function POST(req: NextRequest) {
 
     const components: any[] = [];
 
-    const appUrl = process.env.NEXT_PUBLIC_APP_URL || `https://${process.env.VERCEL_URL || 'whatsapp-api-app-silk.vercel.app'}`;
+    const supabasePublicUrl = (process.env.NEXT_PUBLIC_SUPABASE_URL || process.env.SUPABASE_URL || '').replace(/\/$/, '');
 
     const normalizeUrl = (url: string) => {
       let u = url.trim();
       if (!u.startsWith('http://') && !u.startsWith('https://')) {
-        return `${appUrl}/api/documento?archivo=${encodeURIComponent(u)}`;
+        return `${supabasePublicUrl}/storage/v1/object/public/documentos/${encodeURIComponent(u)}`;
       }
       return u;
     };
 
-    if (header_video_url && String(header_video_url).trim() !== '') {
-      const link = normalizeUrl(String(header_video_url));
-      components.push({ type: 'header', parameters: [{ type: 'video', video: { link } }] });
-    } else if (header_image_url && String(header_image_url).trim() !== '') {
-      const link = normalizeUrl(String(header_image_url));
-      components.push({ type: 'header', parameters: [{ type: 'image', image: { link } }] });
-    } else if (header_document_url && String(header_document_url).trim() !== '') {
-      const link = normalizeUrl(String(header_document_url));
-      components.push({ type: 'header', parameters: [{ type: 'document', document: { link, filename: String(header_document_url).trim().split('/').pop() } }] });
+    const htype = header_type || 'none';
+    let headerUrl = '';
+    if (htype === 'video') headerUrl = header_video_url;
+    else if (htype === 'document') headerUrl = header_document_url;
+    else if (htype === 'image') headerUrl = header_image_url;
+    if (!headerUrl) headerUrl = header_image_url || header_document_url || header_video_url;
+
+    if (headerUrl && String(headerUrl).trim() !== '') {
+      const link = normalizeUrl(String(headerUrl));
+      if (htype === 'video') {
+        components.push({ type: 'header', parameters: [{ type: 'video', video: { link } }] });
+      } else if (htype === 'document') {
+        const filename = String(headerUrl).trim().split('/').pop() || 'documento';
+        components.push({ type: 'header', parameters: [{ type: 'document', document: { link, filename } }] });
+      } else {
+        components.push({ type: 'header', parameters: [{ type: 'image', image: { link } }] });
+      }
     }
 
     components.push({ type: 'body', parameters: bodyParams });

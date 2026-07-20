@@ -44,20 +44,32 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ detail: 'META_TOKEN no configurado' }, { status: 500 });
     }
 
+    const supabasePublicUrl = (process.env.NEXT_PUBLIC_SUPABASE_URL || process.env.SUPABASE_URL || '').replace(/\/$/, '');
+
+    const normalizeUrl = (url: string) => {
+      let u = url.trim();
+      if (!u.startsWith('http://') && !u.startsWith('https://')) {
+        return `${supabasePublicUrl}/storage/v1/object/public/documentos/${encodeURIComponent(u)}`;
+      }
+      return u;
+    };
+
     // 3. Build payload
     let payload: any = { messaging_product: 'whatsapp', to };
     let mensajeGuardar = '';
 
     if (video_url && String(video_url).trim() !== '') {
+      const link = normalizeUrl(String(video_url));
       payload.type = 'video';
-      payload.video = { link: video_url };
+      payload.video = { link };
       if (caption) payload.video.caption = caption;
-      mensajeGuardar = `video: ${video_url}`;
+      mensajeGuardar = `video: ${link}`;
     } else if (image_url && String(image_url).trim() !== '') {
+      const link = normalizeUrl(String(image_url));
       payload.type = 'image';
-      payload.image = { link: image_url };
+      payload.image = { link };
       if (caption) payload.image.caption = caption;
-      mensajeGuardar = `image: ${image_url}`;
+      mensajeGuardar = `image: ${link}`;
     } else {
       payload.type = 'text';
       payload.text = { body: mensaje };

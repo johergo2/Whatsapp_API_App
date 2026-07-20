@@ -172,12 +172,12 @@ export default function SendPage() {
                       {Array.from({ length: tpl.num_footer }).map((_, i) => (
                         <div style={{ display: 'flex', gap: 12, alignItems: 'flex-end', marginBottom: 12 }} key={i}>
                           <div className="form-group" style={{ flex: 2 }}>
-                            <label>URL imagen {i + 1}</label>
+                            <label>Nombre archivo imagen {i + 1}</label>
                             <input
-                              type="url"
+                              type="text"
                               value={form[`footer_url${i + 1}`] ?? saved[`footer_url${i + 1}`] ?? ''}
                               onChange={(e) => updateField(`footer_url${i + 1}`, e.target.value)}
-                              placeholder="https://..."
+                              placeholder="Nombre del archivo"
                             />
                           </div>
                           <div className="form-group" style={{ flex: 1 }}>
