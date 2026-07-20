@@ -2,78 +2,86 @@
 
 import { useApp } from '@/lib/store';
 import { Sidebar } from '@/components/ui/Sidebar';
-import { useMemo, useState, useEffect } from 'react';
+import { useMemo, useState, useEffect, useCallback } from 'react';
 import { Card } from '@/components/ui/Card';
 
 function formatDate(dateStr: string) {
   if (!dateStr) return '-';
   try {
     const d = new Date(dateStr);
-    return isNaN(d.getTime()) ? dateStr : d.toLocaleDateString('es-CO', { year: 'numeric', month: '2-digit', day: '2-digit' });
+    return isNaN(d.getTime()) ? dateStr : d.toLocaleDateString('es-CO', { year: 'numeric', month: '2-digit', day: '2-digit', hour: '2-digit', minute: '2-digit' });
   } catch {
     return dateStr;
   }
 }
 
-export default function HistoryPage() {
+export default function HistoryDetailPage() {
   const { state, dispatch } = useApp();
   const [page, setPage] = useState(0);
   const [loading, setLoading] = useState(true);
   const [data, setData] = useState<any[]>([]);
-  const pageSize = 20;
+  const [total, setTotal] = useState(0);
+  const pageSize = 50;
 
   const [fDe, setFDe] = useState('');
   const [fPara, setFPara] = useState('');
-  const [fDir] = useState('outbound');
+  const [fDir, setFDir] = useState('');
   const [fMsg, setFMsg] = useState('');
   const [fEst, setFEst] = useState('');
   const [fFechaDesde, setFFechaDesde] = useState('');
   const [fFechaHasta, setFFechaHasta] = useState('');
 
-  useEffect(() => {
+  const fetchData = useCallback(async () => {
     const cId = state.user?.cliente_id;
     const uId = state.user?.id;
     if (!cId || !uId) return;
     setLoading(true);
-    fetch('/api/mensajes', {
-      headers: { 'X-Cliente-Id': String(cId), 'X-Usuario-Id': String(uId) },
-    })
-      .then(r => r.ok ? r.json() : { data: [] })
-      .then(j => { setData(j.data || []); })
-      .catch(() => setData([]))
-      .finally(() => setLoading(false));
-  }, [state.user?.cliente_id, state.user?.id]);
+    try {
+      const r = await fetch(`/api/history-detail?page=${page}&pageSize=${pageSize}`, {
+        headers: { 'X-Cliente-Id': String(cId), 'X-Usuario-Id': String(uId) },
+      });
+      if (r.ok) {
+        const j = await r.json();
+        setData(j.data || []);
+        setTotal(j.total || 0);
+      } else {
+        setData([]);
+        setTotal(0);
+      }
+    } catch {
+      setData([]);
+      setTotal(0);
+    } finally {
+      setLoading(false);
+    }
+  }, [state.user?.cliente_id, state.user?.id, page]);
+
+  useEffect(() => {
+    fetchData();
+  }, [fetchData]);
 
   const filtered = useMemo(() => {
-    return data
-      .filter(msg => {
-        if (msg.direction !== 'outbound') return false;
-        if (fDe && !(msg.from_number || '').toLowerCase().includes(fDe.toLowerCase())) return false;
-        if (fPara && !(msg.to_number || '').toLowerCase().includes(fPara.toLowerCase())) return false;
-        if (fMsg && !(msg.mensaje || '').toLowerCase().includes(fMsg.toLowerCase())) return false;
-        if (fEst && !(msg.estado || '').toLowerCase().includes(fEst.toLowerCase())) return false;
-        if (fFechaDesde && (!msg.fecha_creacion || (msg.fecha_creacion.split('T')[0] || msg.fecha_creacion) < fFechaDesde)) return false;
-        if (fFechaHasta && (!msg.fecha_creacion || (msg.fecha_creacion.split('T')[0] || msg.fecha_creacion) > fFechaHasta)) return false;
-        return true;
-      })
-      .sort((a, b) => {
-        const dateA = a.fecha_creacion || '';
-        const dateB = b.fecha_creacion || '';
-        if (dateA > dateB) return -1;
-        if (dateA < dateB) return 1;
-        return (b.id || 0) - (a.id || 0);
-      });
-  }, [data, fDe, fPara, fMsg, fEst, fFechaDesde, fFechaHasta]);
+    return data.filter(row => {
+      if (fDe && !(row.from_number || '').toLowerCase().includes(fDe.toLowerCase())) return false;
+      if (fPara && !(row.to_number || '').toLowerCase().includes(fPara.toLowerCase())) return false;
+      if (fDir && row.direction !== fDir) return false;
+      if (fMsg && !(row.mensaje || '').toLowerCase().includes(fMsg.toLowerCase())) return false;
+      if (fEst && !(row.estado || '').toLowerCase().includes(fEst.toLowerCase()) && !(row.e_estados_detail || '').toLowerCase().includes(fEst.toLowerCase())) return false;
+      if (fFechaDesde && (!row.fecha_creacion || (row.fecha_creacion.split('T')[0] || row.fecha_creacion) < fFechaDesde)) return false;
+      if (fFechaHasta && (!row.fecha_creacion || (row.fecha_creacion.split('T')[0] || row.fecha_creacion) > fFechaHasta)) return false;
+      return true;
+    });
+  }, [data, fDe, fPara, fDir, fMsg, fEst, fFechaDesde, fFechaHasta]);
 
-  const total = filtered.length;
   const totalPages = Math.max(1, Math.ceil(total / pageSize));
   const safePage = Math.min(page, totalPages - 1);
-  const paginated = filtered.slice(safePage * pageSize, (safePage + 1) * pageSize);
+
+  const paginated = filtered;
 
   return (
     <div id="app">
       {state.demoMode && (
-        <div id="demo-banner" className="demo-banner">⚡ Modo Demo — Los datos son simulados</div>
+        <div id="demo-banner" className="demo-banner">Modo Demo — Los datos son simulados</div>
       )}
       <div className="layout">
         <Sidebar />
@@ -94,7 +102,6 @@ export default function HistoryPage() {
             </span>
           </div>
           <section className="section active" style={{ position: 'relative' }}>
-
             <div className="header-images">
               <img src="/Productosasesorias_transp.png" alt="" className="header-logo-pya-decorative" />
               <div className="header-brand">
@@ -106,15 +113,15 @@ export default function HistoryPage() {
               </div>
             </div>
             <div className="section-header">
-              <h2>Historial de mensajes</h2>
-              <p>Consulte el estado de los mensajes enviados</p>
+              <h2>Historial Detallado</h2>
+              <p>Consulte el detalle de estados de cada mensaje</p>
             </div>
             <Card>
               <div style={{ display: 'flex', gap: 12, alignItems: 'flex-end', marginBottom: 10, flexWrap: 'wrap' }}>
                 <label style={{ fontSize: 12, display: 'flex', flexDirection: 'column', gap: 2 }}>Desde <input className="col-filter" type="date" value={fFechaDesde} onChange={e => { setFFechaDesde(e.target.value); setPage(0); }} /></label>
                 <label style={{ fontSize: 12, display: 'flex', flexDirection: 'column', gap: 2 }}>Hasta <input className="col-filter" type="date" value={fFechaHasta} onChange={e => { setFFechaHasta(e.target.value); setPage(0); }} /></label>
                 {(fFechaDesde || fFechaHasta) && <button className="btn btn-outline btn-sm" onClick={() => { setFFechaDesde(''); setFFechaHasta(''); setPage(0); }}>Limpiar fechas</button>}
-                <span style={{ fontSize: 12, color: '#667781', marginLeft: 'auto' }}>{total} registros{total !== filtered.length ? ` (filtrados de ${data.length})` : ''}</span>
+                <span style={{ fontSize: 12, color: '#667781', marginLeft: 'auto' }}>{total} registros{fFechaDesde || fFechaHasta ? ` (filtrados)` : ''}</span>
               </div>
               <div className="table-container">
                 <table className="table">
@@ -123,29 +130,37 @@ export default function HistoryPage() {
                       <th>ID</th>
                       <th>De<div><input className="col-filter" value={fDe} onChange={e => { setFDe(e.target.value); setPage(0); }} placeholder="Filtrar..." /></div></th>
                       <th>Para<div><input className="col-filter" value={fPara} onChange={e => { setFPara(e.target.value); setPage(0); }} placeholder="Filtrar..." /></div></th>
-                      <th>Dirección<div><select className="col-filter" value="outbound" disabled><option value="outbound">Saliente</option></select></div></th>
+                      <th>Dir<div><select className="col-filter" value={fDir} onChange={e => { setFDir(e.target.value); setPage(0); }}><option value="">Todas</option><option value="outbound">Saliente</option><option value="inbound">Entrante</option></select></div></th>
                       <th>Mensaje<div><input className="col-filter" value={fMsg} onChange={e => { setFMsg(e.target.value); setPage(0); }} placeholder="Filtrar..." /></div></th>
-                      <th>Estado<div><input className="col-filter" value={fEst} onChange={e => { setFEst(e.target.value); setPage(0); }} placeholder="Filtrar..." /></div></th>
+                      <th>Estado m.<div><input className="col-filter" value={fEst} onChange={e => { setFEst(e.target.value); setPage(0); }} placeholder="Filtrar..." /></div></th>
+                      <th>IDs detalle</th>
+                      <th>Estados detalle</th>
+                      <th>Error código</th>
+                      <th>Error detalle</th>
                       <th>Wamid</th>
                       <th>Fecha</th>
                     </tr>
                   </thead>
                   <tbody>
                     {loading ? (
-                      <tr><td colSpan={8} className="empty-state">Cargando...</td></tr>
+                      <tr><td colSpan={12} className="empty-state">Cargando...</td></tr>
                     ) : paginated.length === 0 ? (
-                      <tr><td colSpan={8} className="empty-state">No hay registros de mensajes</td></tr>
+                      <tr><td colSpan={12} className="empty-state">No hay registros</td></tr>
                     ) : (
-                      paginated.map((msg, i) => (
-                        <tr key={msg.id || i}>
-                          <td>{msg.id || '-'}</td>
-                          <td>{msg.from_number || '-'}</td>
-                          <td>{msg.to_number || '-'}</td>
-                          <td>{msg.direction || '-'}</td>
-                          <td>{msg.mensaje || '-'}</td>
-                          <td>{msg.estado || '-'}</td>
-                          <td style={{ fontSize: 11 }}>{msg.wamid ? msg.wamid.slice(0, 20) + '…' : '-'}</td>
-                          <td>{msg.fecha_creacion ? formatDate(msg.fecha_creacion) : '-'}</td>
+                      paginated.map((row, i) => (
+                        <tr key={row.m_id || i}>
+                          <td>{row.m_id}</td>
+                          <td>{row.from_number || '-'}</td>
+                          <td>{row.to_number || '-'}</td>
+                          <td>{row.direction || '-'}</td>
+                          <td style={{ maxWidth: 200, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }} title={row.mensaje}>{row.mensaje || '-'}</td>
+                          <td>{row.estado || '-'}</td>
+                          <td style={{ fontSize: 11 }}>{row.id_detail || '-'}</td>
+                          <td style={{ fontSize: 11 }}>{row.e_estados_detail || '-'}</td>
+                          <td style={{ fontSize: 11 }}>{row.error_codigo || '-'}</td>
+                          <td style={{ fontSize: 11 }}>{row.error_detalle || '-'}</td>
+                          <td style={{ fontSize: 11 }}>{row.wamid ? row.wamid.slice(0, 20) + '...' : '-'}</td>
+                          <td style={{ fontSize: 11 }}>{formatDate(row.fecha_creacion)}</td>
                         </tr>
                       ))
                     )}

@@ -54,13 +54,20 @@ WhatsApp_API_App/
 │   │   │   ├── webhook/route.ts         # GET/POST - webhook Meta
 │   │   │   ├── documento/route.ts       # GET - proxy PDFs (Supabase Storage)
 │   │   │   ├── outbound/route.ts        # POST - registrar salida manual
-│   │   │   └── chatwoot/                # Webhook Chatwoot
+│   │   │   ├── chatwoot/                # Webhook Chatwoot
+│   │   │   ├── upload/route.ts          # POST - subir archivo a bucket chat_uploads
+│   │   │   ├── history-detail/route.ts  # GET - mens+estados agg (superadmin)
+│   │   │   └── history-detailed/route.ts# GET - mens+cliente nombre (superadmin)
 │   │   ├── templates/page.tsx           # Gestión de plantillas (con nomb_mio)
 │   │   ├── prospects/page.tsx           # Gestión de prospectos + envío
 │   │   ├── send/page.tsx                # Envío de mensajes
-│   │   ├── history/page.tsx             # Historial
+│   │   ├── history/page.tsx             # Historial (solo outbound)
+│   │   ├── history/detail/page.tsx      # Historial Soporte (superadmin)
+│   │   ├── history/detailed/page.tsx    # Historial Detallado (superadmin)
 │   │   ├── register/page.tsx            # Registro de usuario
-│   │   └── page.tsx                     # Home (login o dashboard)
+│   │   ├── login/page.tsx               # Login
+│   │   ├── seleccionar-cliente/page.tsx # Selección de cliente
+│   │   └── page.tsx                     # Home (dashboard)
 │   ├── components/
 │   │   ├── SessionBanner.tsx            # Banner sesión (loading/expired)
 │   │   ├── Dashboard.tsx                # Dashboard con branding WhatsApp
@@ -141,12 +148,19 @@ WhatsApp_API_App/
 - **Tabla de prospectos**: muestra siempre todas las columnas (cabecera, texto1-6, footer img 1-4) sin depender de plantilla seleccionada; vacía cuando no hay plantilla
 - **Paginación**: 20 prospectos por página en Prospects e History
 - **Espaciado compacto**: padding `4px 8px` en tablas
-- **History page**: fetch directo a `/api/mensajes` con fallback si store vacío, paginación (20/página), filtros por columna (De, Para, Dirección, Mensaje, Estado, Fecha Desde/Hasta) — todos client-side via `useMemo`
+- **History page**: fetch directo a `/api/mensajes`, paginación (20/página), filtros por columna (De, Para, Dirección, Mensaje, Estado, Fecha Desde/Hasta) — todos client-side via `useMemo`. Filtra solo `direction='outbound'`, ordena por fecha_creacion DESC + id DESC.
 - **Filtros de fecha**: inputs `type="date"` con etiquetas "Desde" y "Hasta" encima de la tabla, comparación por string `YYYY-MM-DD` (sin timezone issues)
 - **API `/api/mensajes`**: acepta `page`, `pageSize` (default 200), `direction`, `estado`, `search` como query params; retorna `{ data, total, page, pageSize }`
 - **Store**: extrae `.data` de la respuesta de `/api/mensajes`
+- **Topbar**: muestra nombre del usuario y debajo (negrita) el nombre del cliente (`cliente?.nombre_comercial`)
+- **Chat**: botón ☰ en header de conversación en mobile para abrir menú lateral
+- **Historial Soporte** (`/history/detail`): superadmin. JOIN mensajes_whatsapp + estado_mensajes_whatsapp (INNER), muestra IDs de estado, estados concatenados, errores. API `/api/history-detail` sin filtro por cliente.
+- **Historial Detallado** (`/history/detailed`): superadmin. JOIN mensajes_whatsapp + clientes_whatsapp, agrega columna Cliente (`nombre_comercial`). API `/api/history-detailed`.
+- **Sidebar**: ítems `Historial Soporte` y `Historial Detallado` visibles solo para `rol === 'superadmin'`
+- **Scrollbar**: reglas `-webkit-scrollbar` aisladas con `@media (-webkit-min-device-pixel-ratio: 0)` + `scrollbar-width`/`scrollbar-color` estándar para Firefox
 
 ## Pendientes / Próximos Pasos
+- Opción de cargue de archivos al bucket `documentos` en Supabase Storage
 - Chat multiagente para responder mensajes entrantes desde la misma app (reemplazo de Chatwoot)
 - Asignación de conversaciones a agentes con persistencia de agente por contacto
 - Notificaciones en tiempo real para nuevos mensajes entrantes

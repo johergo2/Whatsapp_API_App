@@ -346,3 +346,47 @@ Registra manualmente un mensaje saliente en `mensajes_whatsapp`.
 Recibe webhooks de Chatwoot y reenvía la respuesta del agente a WhatsApp.
 
 **Header:** `X-Cliente-Id: 1`
+
+---
+
+### `GET /api/history-detail`
+Historial con detalle de estados (solo superadmin). INNER JOIN `mensajes_whatsapp` + `estado_mensajes_whatsapp`, sin filtro por cliente.
+
+**Header:** `X-Cliente-Id`, `X-Usuario-Id`
+
+**Query params:** `page` (default 0), `pageSize` (default 200)
+
+**Response:**
+```json
+{
+  "data": [{
+    "m_id": 644,
+    "cliente_id": 1,
+    "from_number": "...",
+    "to_number": "...",
+    "direction": "outbound",
+    "mensaje": "texto",
+    "estado": "sent",
+    "wamid": "wamid...",
+    "fecha_creacion": "...",
+    "id_detail": "1, 2",
+    "e_estados_detail": "sent, delivered",
+    "error_codigo": "",
+    "error_detalle": ""
+  }],
+  "total": 145,
+  "page": 0,
+  "pageSize": 200
+}
+```
+
+---
+
+### `GET /api/history-detailed`
+Historial con nombre del cliente (solo superadmin). JOIN `mensajes_whatsapp` + `clientes_whatsapp`.
+
+**Header:** `X-Cliente-Id`, `X-Usuario-Id`
+
+**Query params:** `page` (default 0), `pageSize` (default 200), `direction`, `estado`, `search`
+
+**Response:** igual que `/api/mensajes` con campo adicional `cliente_nombre`.

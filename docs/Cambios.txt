@@ -1,6 +1,60 @@
 === MERCURIO SOFTWARE — REGISTRO DE CAMBIOS ===
 
-Fecha: 13/07/2026
+Fecha: 19/07/2026
+
+============================================================
+HISTORIAL SOPORTE E HISTORIAL DETALLADO (SUPERADMIN) (19/07/2026)
+============================================================
+
+- Nuevo endpoint GET /api/history-detail: INNER JOIN mensajes_whatsapp + estado_mensajes_whatsapp
+  * Retorna campos agregados: id_detail, e_estados_detail, error_codigo, error_detalle
+  * Sin filtro por cliente_id (visible para superadmin que necesita ver todos los clientes)
+  * Orden descendente por id
+- Nueva página /history/detail: "Historial Soporte", solo visible para superadmin
+  * Tabla con columnas: ID, De, Para, Dir, Mensaje, Estado m., IDs detalle, Estados detalle,
+    Error código, Error detalle, Wamid, Fecha
+  * Filtros client-side por columna + fechas, paginación
+- Nuevo endpoint GET /api/history-detailed: JOIN mensajes_whatsapp + clientes_whatsapp
+  * Retorna cliente_nombre (nombre_comercial del cliente)
+  * Filtrado por cliente_id del usuario autenticado
+- Nueva página /history/detailed: "Historial Detallado", solo visible para superadmin
+  * Igual a Historial + columna Cliente con filtro
+- Sidebar: ítems "Historial Soporte" y "Historial Detallado" con flag superadminOnly
+  * Filtro en render: NAV_ITEMS.filter(item => !item.superadminOnly || state.user?.rol === 'superadmin')
+
+============================================================
+HISTORIAL: FILTRO OUTBOUND + ORDEN (19/07/2026)
+============================================================
+
+- History page: filtro fijo direction='outbound' (solo salientes)
+- Orden: fecha_creacion DESC + id DESC (client-side via .sort())
+- Columna Dirección: selector deshabilitado mostrando "Saliente" fijo
+- API /api/mensajes sin cambios (no afecta otras funcionalidades)
+
+============================================================
+TOPBAR: NOMBRE DEL CLIENTE (19/07/2026)
+============================================================
+
+- En todas las pantallas (8 páginas): debajo del nombre del usuario aparece
+  el nombre del cliente (state.cliente?.nombre_comercial) en bold, mismo fontSize 13
+- Afecta: Dashboard, Historial, Historial Detallado, Historial Soporte,
+  Chat, Plantillas, Enviar, Prospectos
+
+============================================================
+CHAT: BOTÓN MENÚ LATERAL EN MOBILE (19/07/2026)
+============================================================
+
+- Agregado botón ☰ en el header de la conversación (junto al ← volver)
+  para abrir el menú lateral en mobile
+- Usa isMobile state + document.getElementById('sidebar')?.classList.toggle('open')
+
+============================================================
+SCROLLBAR: FIREFOX COMPATIBILITY (19/07/2026)
+============================================================
+
+- Envuelto ::-webkit-scrollbar en @media (-webkit-min-device-pixel-ratio: 0)
+- Agregado scrollbar-width: thin + scrollbar-color para Firefox (propiedades estándar)
+- Elimina warning "Ruleset ignored due to bad selector" en Firefox
 
 ============================================================
 BULK INSERT PROSPECTOS: OPTIMIZACIÓN DE RENDIMIENTO (13/07/2026)

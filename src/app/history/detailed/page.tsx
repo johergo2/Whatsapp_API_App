@@ -15,7 +15,7 @@ function formatDate(dateStr: string) {
   }
 }
 
-export default function HistoryPage() {
+export default function HistoryDetailedPage() {
   const { state, dispatch } = useApp();
   const [page, setPage] = useState(0);
   const [loading, setLoading] = useState(true);
@@ -24,9 +24,10 @@ export default function HistoryPage() {
 
   const [fDe, setFDe] = useState('');
   const [fPara, setFPara] = useState('');
-  const [fDir] = useState('outbound');
+  const [fDir, setFDir] = useState('');
   const [fMsg, setFMsg] = useState('');
   const [fEst, setFEst] = useState('');
+  const [fCliente, setFCliente] = useState('');
   const [fFechaDesde, setFFechaDesde] = useState('');
   const [fFechaHasta, setFFechaHasta] = useState('');
 
@@ -35,7 +36,7 @@ export default function HistoryPage() {
     const uId = state.user?.id;
     if (!cId || !uId) return;
     setLoading(true);
-    fetch('/api/mensajes', {
+    fetch('/api/history-detailed', {
       headers: { 'X-Cliente-Id': String(cId), 'X-Usuario-Id': String(uId) },
     })
       .then(r => r.ok ? r.json() : { data: [] })
@@ -45,25 +46,18 @@ export default function HistoryPage() {
   }, [state.user?.cliente_id, state.user?.id]);
 
   const filtered = useMemo(() => {
-    return data
-      .filter(msg => {
-        if (msg.direction !== 'outbound') return false;
-        if (fDe && !(msg.from_number || '').toLowerCase().includes(fDe.toLowerCase())) return false;
-        if (fPara && !(msg.to_number || '').toLowerCase().includes(fPara.toLowerCase())) return false;
-        if (fMsg && !(msg.mensaje || '').toLowerCase().includes(fMsg.toLowerCase())) return false;
-        if (fEst && !(msg.estado || '').toLowerCase().includes(fEst.toLowerCase())) return false;
-        if (fFechaDesde && (!msg.fecha_creacion || (msg.fecha_creacion.split('T')[0] || msg.fecha_creacion) < fFechaDesde)) return false;
-        if (fFechaHasta && (!msg.fecha_creacion || (msg.fecha_creacion.split('T')[0] || msg.fecha_creacion) > fFechaHasta)) return false;
-        return true;
-      })
-      .sort((a, b) => {
-        const dateA = a.fecha_creacion || '';
-        const dateB = b.fecha_creacion || '';
-        if (dateA > dateB) return -1;
-        if (dateA < dateB) return 1;
-        return (b.id || 0) - (a.id || 0);
-      });
-  }, [data, fDe, fPara, fMsg, fEst, fFechaDesde, fFechaHasta]);
+    return data.filter(msg => {
+      if (fDe && !(msg.from_number || '').toLowerCase().includes(fDe.toLowerCase())) return false;
+      if (fPara && !(msg.to_number || '').toLowerCase().includes(fPara.toLowerCase())) return false;
+      if (fDir && msg.direction !== fDir) return false;
+      if (fMsg && !(msg.mensaje || '').toLowerCase().includes(fMsg.toLowerCase())) return false;
+      if (fEst && !(msg.estado || '').toLowerCase().includes(fEst.toLowerCase())) return false;
+      if (fCliente && !(msg.cliente_nombre || '').toLowerCase().includes(fCliente.toLowerCase())) return false;
+      if (fFechaDesde && (!msg.fecha_creacion || (msg.fecha_creacion.split('T')[0] || msg.fecha_creacion) < fFechaDesde)) return false;
+      if (fFechaHasta && (!msg.fecha_creacion || (msg.fecha_creacion.split('T')[0] || msg.fecha_creacion) > fFechaHasta)) return false;
+      return true;
+    });
+  }, [data, fDe, fPara, fDir, fMsg, fEst, fCliente, fFechaDesde, fFechaHasta]);
 
   const total = filtered.length;
   const totalPages = Math.max(1, Math.ceil(total / pageSize));
@@ -73,7 +67,7 @@ export default function HistoryPage() {
   return (
     <div id="app">
       {state.demoMode && (
-        <div id="demo-banner" className="demo-banner">⚡ Modo Demo — Los datos son simulados</div>
+        <div id="demo-banner" className="demo-banner">Modo Demo — Los datos son simulados</div>
       )}
       <div className="layout">
         <Sidebar />
@@ -106,7 +100,7 @@ export default function HistoryPage() {
               </div>
             </div>
             <div className="section-header">
-              <h2>Historial de mensajes</h2>
+              <h2>Historial Detallado</h2>
               <p>Consulte el estado de los mensajes enviados</p>
             </div>
             <Card>
@@ -121,9 +115,10 @@ export default function HistoryPage() {
                   <thead>
                     <tr>
                       <th>ID</th>
+                      <th>Cliente<div><input className="col-filter" value={fCliente} onChange={e => { setFCliente(e.target.value); setPage(0); }} placeholder="Filtrar..." /></div></th>
                       <th>De<div><input className="col-filter" value={fDe} onChange={e => { setFDe(e.target.value); setPage(0); }} placeholder="Filtrar..." /></div></th>
                       <th>Para<div><input className="col-filter" value={fPara} onChange={e => { setFPara(e.target.value); setPage(0); }} placeholder="Filtrar..." /></div></th>
-                      <th>Dirección<div><select className="col-filter" value="outbound" disabled><option value="outbound">Saliente</option></select></div></th>
+                      <th>Dirección<div><select className="col-filter" value={fDir} onChange={e => { setFDir(e.target.value); setPage(0); }}><option value="">Todas</option><option value="outbound">Saliente</option><option value="inbound">Entrante</option></select></div></th>
                       <th>Mensaje<div><input className="col-filter" value={fMsg} onChange={e => { setFMsg(e.target.value); setPage(0); }} placeholder="Filtrar..." /></div></th>
                       <th>Estado<div><input className="col-filter" value={fEst} onChange={e => { setFEst(e.target.value); setPage(0); }} placeholder="Filtrar..." /></div></th>
                       <th>Wamid</th>
@@ -132,19 +127,20 @@ export default function HistoryPage() {
                   </thead>
                   <tbody>
                     {loading ? (
-                      <tr><td colSpan={8} className="empty-state">Cargando...</td></tr>
+                      <tr><td colSpan={9} className="empty-state">Cargando...</td></tr>
                     ) : paginated.length === 0 ? (
-                      <tr><td colSpan={8} className="empty-state">No hay registros de mensajes</td></tr>
+                      <tr><td colSpan={9} className="empty-state">No hay registros de mensajes</td></tr>
                     ) : (
                       paginated.map((msg, i) => (
                         <tr key={msg.id || i}>
                           <td>{msg.id || '-'}</td>
+                          <td>{msg.cliente_nombre || '-'}</td>
                           <td>{msg.from_number || '-'}</td>
                           <td>{msg.to_number || '-'}</td>
                           <td>{msg.direction || '-'}</td>
                           <td>{msg.mensaje || '-'}</td>
                           <td>{msg.estado || '-'}</td>
-                          <td style={{ fontSize: 11 }}>{msg.wamid ? msg.wamid.slice(0, 20) + '…' : '-'}</td>
+                          <td style={{ fontSize: 11 }}>{msg.wamid ? msg.wamid.slice(0, 20) + '...' : '-'}</td>
                           <td>{msg.fecha_creacion ? formatDate(msg.fecha_creacion) : '-'}</td>
                         </tr>
                       ))
