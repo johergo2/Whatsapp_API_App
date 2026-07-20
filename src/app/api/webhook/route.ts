@@ -26,6 +26,7 @@ export async function GET(req: NextRequest) {
 export async function POST(req: NextRequest) {
   try {
     const payload = await req.json();
+    console.log('[WEBHOOK POST] payload:', JSON.stringify(payload));
     const supabase = await getDb();
 
     const entry = payload?.entry?.[0];
