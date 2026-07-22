@@ -30,7 +30,7 @@ El esquema completo está definido en `supabase_migration.sql` en la raíz del p
 
 | Tabla | Descripción |
 |-------|-------------|
-| `usuarios` | Usuarios del sistema: `id`, `nombre` (username único), `email`, `password_hash` (SHA256), `rol` ('superadmin'|'usuario'), `activo`, `created_at` |
+| `usuarios` | Usuarios del sistema: `id`, `nombre` (username único), `email`, `password_hash` (SHA256), `rol` ('superadmin'|'usuario'|'envíos'), `activo`, `created_at` |
 | `usuarios_clientes` | Relación N:M usuarios ↔ clientes: `usuario_id` FK, `cliente_id` FK, PK compuesta. Trigger `validate_usuario_cliente` valida integridad. |
 
 ### Seed Data

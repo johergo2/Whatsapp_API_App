@@ -3,14 +3,25 @@
 import { useApp } from '@/lib/store';
 import { Sidebar } from '@/components/ui/Sidebar';
 import { useRoleGuard } from '@/hooks/useRoleGuard';
-import { useMemo, useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { Card } from '@/components/ui/Card';
 
-function formatDate(dateStr: string) {
+function formatColombiaDate(dateStr: string) {
   if (!dateStr) return '-';
   try {
-    const d = new Date(dateStr);
-    return isNaN(d.getTime()) ? dateStr : d.toLocaleDateString('es-CO', { year: 'numeric', month: '2-digit', day: '2-digit', hour: '2-digit', minute: '2-digit' });
+    const d = new Date(dateStr.endsWith('Z') ? dateStr : dateStr + 'Z');
+    if (isNaN(d.getTime())) return dateStr;
+    const p = new Intl.DateTimeFormat('es-CO', {
+      timeZone: 'America/Bogota',
+      year: 'numeric',
+      month: '2-digit',
+      day: '2-digit',
+      hour: '2-digit',
+      minute: '2-digit',
+      hour12: false,
+    }).formatToParts(d);
+    const get = (t: string) => p.find(x => x.type === t)?.value || '00';
+    return `${get('year')}/${get('month')}/${get('day')} ${get('hour')}:${get('minute')}`;
   } catch {
     return dateStr;
   }
@@ -23,8 +34,9 @@ export default function HistoryDetailPage() {
   const [loading, setLoading] = useState(true);
   const [data, setData] = useState<any[]>([]);
   const [total, setTotal] = useState(0);
-  const pageSize = 50;
+  const pageSize = 20;
 
+  const [fCliente, setFCliente] = useState('');
   const [fDe, setFDe] = useState('');
   const [fPara, setFPara] = useState('');
   const [fDir, setFDir] = useState('');
@@ -39,7 +51,19 @@ export default function HistoryDetailPage() {
     if (!cId || !uId) return;
     setLoading(true);
     try {
-      const r = await fetch(`/api/history-detail?page=${page}&pageSize=${pageSize}`, {
+      const params = new URLSearchParams();
+      params.set('page', String(page));
+      params.set('pageSize', String(pageSize));
+      if (fDir) params.set('direction', fDir);
+      if (fCliente) params.set('cliente_nombre', fCliente);
+      if (fDe) params.set('from_number', fDe);
+      if (fPara) params.set('to_number', fPara);
+      if (fMsg) params.set('mensaje', fMsg);
+      if (fEst) params.set('estado', fEst);
+      if (fFechaDesde) params.set('fecha_desde', fFechaDesde);
+      if (fFechaHasta) params.set('fecha_hasta', fFechaHasta);
+
+      const r = await fetch(`/api/history-detail?${params.toString()}`, {
         headers: { 'X-Cliente-Id': String(cId), 'X-Usuario-Id': String(uId) },
       });
       if (r.ok) {
@@ -56,29 +80,18 @@ export default function HistoryDetailPage() {
     } finally {
       setLoading(false);
     }
-  }, [state.user?.cliente_id, state.user?.id, page]);
+  }, [state.user?.cliente_id, state.user?.id, page, fDir, fCliente, fDe, fPara, fMsg, fEst, fFechaDesde, fFechaHasta]);
 
   useEffect(() => {
     fetchData();
   }, [fetchData]);
 
-  const filtered = useMemo(() => {
-    return data.filter(row => {
-      if (fDe && !(row.from_number || '').toLowerCase().includes(fDe.toLowerCase())) return false;
-      if (fPara && !(row.to_number || '').toLowerCase().includes(fPara.toLowerCase())) return false;
-      if (fDir && row.direction !== fDir) return false;
-      if (fMsg && !(row.mensaje || '').toLowerCase().includes(fMsg.toLowerCase())) return false;
-      if (fEst && !(row.estado || '').toLowerCase().includes(fEst.toLowerCase()) && !(row.e_estados_detail || '').toLowerCase().includes(fEst.toLowerCase())) return false;
-      if (fFechaDesde && (!row.fecha_creacion || (row.fecha_creacion.split('T')[0] || row.fecha_creacion) < fFechaDesde)) return false;
-      if (fFechaHasta && (!row.fecha_creacion || (row.fecha_creacion.split('T')[0] || row.fecha_creacion) > fFechaHasta)) return false;
-      return true;
-    });
-  }, [data, fDe, fPara, fDir, fMsg, fEst, fFechaDesde, fFechaHasta]);
+  const hasFilters = !!(fCliente || fDe || fPara || fMsg || fEst || fFechaDesde || fFechaHasta);
 
   const totalPages = Math.max(1, Math.ceil(total / pageSize));
   const safePage = Math.min(page, totalPages - 1);
 
-  const paginated = filtered;
+  const paginated = data;
 
   return (
     <div id="app">
@@ -123,13 +136,14 @@ export default function HistoryDetailPage() {
                 <label style={{ fontSize: 12, display: 'flex', flexDirection: 'column', gap: 2 }}>Desde <input className="col-filter" type="date" value={fFechaDesde} onChange={e => { setFFechaDesde(e.target.value); setPage(0); }} /></label>
                 <label style={{ fontSize: 12, display: 'flex', flexDirection: 'column', gap: 2 }}>Hasta <input className="col-filter" type="date" value={fFechaHasta} onChange={e => { setFFechaHasta(e.target.value); setPage(0); }} /></label>
                 {(fFechaDesde || fFechaHasta) && <button className="btn btn-outline btn-sm" onClick={() => { setFFechaDesde(''); setFFechaHasta(''); setPage(0); }}>Limpiar fechas</button>}
-                <span style={{ fontSize: 12, color: '#667781', marginLeft: 'auto' }}>{total} registros{fFechaDesde || fFechaHasta ? ` (filtrados)` : ''}</span>
+                <span style={{ fontSize: 12, color: '#667781', marginLeft: 'auto' }}>{total} registros{hasFilters ? ' (filtrados)' : ''}</span>
               </div>
               <div className="table-container">
                 <table className="table">
                   <thead>
                     <tr>
                       <th>ID</th>
+                      <th>Cliente<div><input className="col-filter" value={fCliente} onChange={e => { setFCliente(e.target.value); setPage(0); }} placeholder="Filtrar..." /></div></th>
                       <th>De<div><input className="col-filter" value={fDe} onChange={e => { setFDe(e.target.value); setPage(0); }} placeholder="Filtrar..." /></div></th>
                       <th>Para<div><input className="col-filter" value={fPara} onChange={e => { setFPara(e.target.value); setPage(0); }} placeholder="Filtrar..." /></div></th>
                       <th>Dir<div><select className="col-filter" value={fDir} onChange={e => { setFDir(e.target.value); setPage(0); }}><option value="">Todas</option><option value="outbound">Saliente</option><option value="inbound">Entrante</option></select></div></th>
@@ -145,13 +159,14 @@ export default function HistoryDetailPage() {
                   </thead>
                   <tbody>
                     {loading ? (
-                      <tr><td colSpan={12} className="empty-state">Cargando...</td></tr>
+                      <tr><td colSpan={13} className="empty-state">Cargando...</td></tr>
                     ) : paginated.length === 0 ? (
-                      <tr><td colSpan={12} className="empty-state">No hay registros</td></tr>
+                      <tr><td colSpan={13} className="empty-state">No hay registros</td></tr>
                     ) : (
                       paginated.map((row, i) => (
                         <tr key={row.m_id || i}>
                           <td>{row.m_id}</td>
+                          <td>{row.cliente_nombre || '-'}</td>
                           <td>{row.from_number || '-'}</td>
                           <td>{row.to_number || '-'}</td>
                           <td>{row.direction || '-'}</td>
@@ -162,7 +177,7 @@ export default function HistoryDetailPage() {
                           <td style={{ fontSize: 11 }}>{row.error_codigo || '-'}</td>
                           <td style={{ fontSize: 11 }}>{row.error_detalle || '-'}</td>
                           <td style={{ fontSize: 11 }}>{row.wamid ? row.wamid.slice(0, 20) + '...' : '-'}</td>
-                          <td style={{ fontSize: 11 }}>{formatDate(row.fecha_creacion)}</td>
+                          <td style={{ whiteSpace: 'nowrap' }}>{row.fecha_creacion ? formatColombiaDate(row.fecha_creacion) : '-'}</td>
                         </tr>
                       ))
                     )}
@@ -176,7 +191,7 @@ export default function HistoryDetailPage() {
                     <button key={i} className={`btn btn-sm ${i === safePage ? 'btn-primary' : 'btn-outline'}`} style={{ minWidth: 28, padding: '3px 6px' }} onClick={() => setPage(i)}>{i + 1}</button>
                   ))}
                   <button className="btn btn-outline btn-sm" disabled={safePage >= totalPages - 1} onClick={() => setPage(p => Math.min(totalPages - 1, p + 1))}>Siguiente</button>
-                  <span style={{ fontSize: 12, color: 'var(--text-secondary)', marginLeft: 8 }}>{total} registros</span>
+                  <span style={{ fontSize: 12, color: 'var(--text-secondary)', marginLeft: 8 }}>{total} registros{hasFilters ? ' (filtrados)' : ''}</span>
                 </div>
               )}
             </Card>

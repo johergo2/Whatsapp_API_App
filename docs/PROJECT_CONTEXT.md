@@ -105,7 +105,7 @@ WhatsApp_API_App/
 ### Autenticación (nuevo)
 | Tabla | Descripción |
 |-------|-------------|
-| `usuarios` | Usuarios del sistema: `id`, `nombre` (username único), `email` (opcional), `password_hash` (SHA256), `rol` (`superadmin`/`usuario`), `activo` (bool) |
+| `usuarios` | Usuarios del sistema: `id`, `nombre` (username único), `email` (opcional), `password_hash` (SHA256), `rol` (`superadmin`/`usuario`/`envíos`), `activo` (bool) |
 | `usuarios_clientes` | Relación N:M usuario-cliente: `usuario_id`, `cliente_id`, trigger para validar pertenencia |
 
 ### Storage
@@ -167,12 +167,19 @@ WhatsApp_API_App/
 - **Scrollbar**: reglas `-webkit-scrollbar` aisladas con `@media (-webkit-min-device-pixel-ratio: 0)` + `scrollbar-width`/`scrollbar-color` estándar para Firefox
 - **Cargue de Archivos**: nueva página `/upload` con drag-and-drop, validación client-side (PNG, PDF, MP4), subida directa a Supabase (bucket público `documentos`) sin pasar por API route. Los archivos se guardan con el nombre original (`upsert: true`).
 - **Campos de archivo**: en Prospects y Send, los campos `adjunto_cabecera` y `footer_imgs` ahora aceptan nombre de archivo (no URL). El sistema resuelve a URL pública de Supabase automáticamente.
+- **Sistema de roles**: 3 roles disponibles: `superadmin` (acceso total), `usuario` (acceso estándar), `envíos` (solo Prospectos + Dashboard). El rol se asigna manualmente en BD al crear el usuario (auto-registro siempre asigna `usuario`).
+- **Route guard (`hooks/useRoleGuard.ts`)**: hook que protege las rutas por rol. Sin sesión → redirige a `/login`. Sesión activa pero rol no autorizado para la ruta → redirige a Dashboard. Páginas protegidas: chat, send, templates, history, upload, history/detail, history/detailed. Prospects queda accesible para todos los roles.
+- **Sidebar filtrado por rol**: usuarios `envíos` solo ven Dashboard y Prospectos en el menú lateral.
 - **Header type**: `send-message/route.ts` usa `header_type` de la plantilla para decidir IMAGE/DOCUMENT/VIDEO, en vez de asumir IMAGE siempre.
 - **Footer images**: al enviar desde Prospects, después de la plantilla se envían las imágenes de footer como mensajes separados vía `send-media` con 3s de intervalo.
 - **normalizeUrl**: tanto `send-message` como `send-media` ahora generan URL pública directa de Supabase (`storage/v1/object/public/documentos/...`) en vez de proxy via `/api/documento`.
 - **Manual de usuario**: creado `docs/Manual_de_Usuario_Mercurio_Software.docx` con 8 capturas de pantalla.
 
 ## Pendientes / Próximos Pasos
+- [ ] **Revertir cambios temporales** (ver `docs/Cambios.txt` secciones `[TEMPORAL]`):
+  - Límite de 10 prospectos para rol `envíos`
+  - Link de registro oculto en LoginForm
+  - Filtro de plantilla única "Solicita permiso a co-propietarios" para rol `envíos`
 - Chat multiagente para responder mensajes entrantes desde la misma app (reemplazo de Chatwoot)
 - Asignación de conversaciones a agentes con persistencia de agente por contacto
 - Notificaciones en tiempo real para nuevos mensajes entrantes

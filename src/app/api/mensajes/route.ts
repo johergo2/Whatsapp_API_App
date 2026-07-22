@@ -14,6 +14,11 @@ export async function GET(req: NextRequest) {
   const direction = searchParams.get('direction');
   const estado = searchParams.get('estado');
   const search = searchParams.get('search');
+  const fromNumber = searchParams.get('from_number');
+  const toNumber = searchParams.get('to_number');
+  const mensaje = searchParams.get('mensaje');
+  const fechaDesde = searchParams.get('fecha_desde');
+  const fechaHasta = searchParams.get('fecha_hasta');
 
   const supabase = getServerSupabase();
 
@@ -30,6 +35,21 @@ export async function GET(req: NextRequest) {
   }
   if (search) {
     query = query.or(`from_number.ilike.%${search}%,to_number.ilike.%${search}%,mensaje.ilike.%${search}%`);
+  }
+  if (fromNumber) {
+    query = query.ilike('from_number', `%${fromNumber}%`);
+  }
+  if (toNumber) {
+    query = query.ilike('to_number', `%${toNumber}%`);
+  }
+  if (mensaje) {
+    query = query.ilike('mensaje', `%${mensaje}%`);
+  }
+  if (fechaDesde) {
+    query = query.gte('fecha_creacion', fechaDesde);
+  }
+  if (fechaHasta) {
+    query = query.lte('fecha_creacion', `${fechaHasta}T23:59:59`);
   }
 
   const from = page * pageSize;

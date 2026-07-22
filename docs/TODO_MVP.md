@@ -100,6 +100,11 @@
 - [x] Envio de footer_imgs como mensajes separados tras la plantilla
 - [x] Campos de archivo aceptan nombre en vez de URL (adjunto_cabecera y footer_imgs)
 - [x] RLS policies para bucket documentos (insert/select/update/delete public)
+- [x] **Sistema de roles**: rol `envíos` agregado al tipo `Usuario.rol`, Sidebar filtrado, rutas protegidas via `useRoleGuard`
+- [ ] **Revertir cambios temporales** (ver `docs/Cambios.txt` secciones `[TEMPORAL]`):
+  - Límite de 10 prospectos para rol `envíos`
+  - Link de registro oculto en LoginForm
+  - Filtro de plantilla única "Solicita permiso a co-propietarios" para rol `envíos`
 - [ ] RLS (Row Level Security) en Supabase para aislar datos por cliente
 - [ ] Editor de plantillas con preview visual
 - [ ] Programación de envíos (fecha/hora)

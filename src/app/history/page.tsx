@@ -3,14 +3,25 @@
 import { useApp } from '@/lib/store';
 import { Sidebar } from '@/components/ui/Sidebar';
 import { useRoleGuard } from '@/hooks/useRoleGuard';
-import { useMemo, useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { Card } from '@/components/ui/Card';
 
-function formatDate(dateStr: string) {
+function formatColombiaDate(dateStr: string) {
   if (!dateStr) return '-';
   try {
-    const d = new Date(dateStr);
-    return isNaN(d.getTime()) ? dateStr : d.toLocaleDateString('es-CO', { year: 'numeric', month: '2-digit', day: '2-digit' });
+    const d = new Date(dateStr.endsWith('Z') ? dateStr : dateStr + 'Z');
+    if (isNaN(d.getTime())) return dateStr;
+    const p = new Intl.DateTimeFormat('es-CO', {
+      timeZone: 'America/Bogota',
+      year: 'numeric',
+      month: '2-digit',
+      day: '2-digit',
+      hour: '2-digit',
+      minute: '2-digit',
+      hour12: false,
+    }).formatToParts(d);
+    const get = (t: string) => p.find(x => x.type === t)?.value || '00';
+    return `${get('year')}/${get('month')}/${get('day')} ${get('hour')}:${get('minute')}`;
   } catch {
     return dateStr;
   }
@@ -26,51 +37,58 @@ export default function HistoryPage() {
 
   const [fDe, setFDe] = useState('');
   const [fPara, setFPara] = useState('');
-  const [fDir] = useState('outbound');
+  const [fDir, setFDir] = useState('');
   const [fMsg, setFMsg] = useState('');
   const [fEst, setFEst] = useState('');
   const [fFechaDesde, setFFechaDesde] = useState('');
   const [fFechaHasta, setFFechaHasta] = useState('');
 
-  useEffect(() => {
+  const [total, setTotal] = useState(0);
+
+  const fetchData = useCallback(async () => {
     const cId = state.user?.cliente_id;
     const uId = state.user?.id;
     if (!cId || !uId) return;
     setLoading(true);
-    fetch('/api/mensajes', {
-      headers: { 'X-Cliente-Id': String(cId), 'X-Usuario-Id': String(uId) },
-    })
-      .then(r => r.ok ? r.json() : { data: [] })
-      .then(j => { setData(j.data || []); })
-      .catch(() => setData([]))
-      .finally(() => setLoading(false));
-  }, [state.user?.cliente_id, state.user?.id]);
+    try {
+      const params = new URLSearchParams();
+      params.set('page', String(page));
+      params.set('pageSize', String(pageSize));
+      if (fDir) params.set('direction', fDir);
+      if (fDe) params.set('from_number', fDe);
+      if (fPara) params.set('to_number', fPara);
+      if (fMsg) params.set('mensaje', fMsg);
+      if (fEst) params.set('estado', fEst);
+      if (fFechaDesde) params.set('fecha_desde', fFechaDesde);
+      if (fFechaHasta) params.set('fecha_hasta', fFechaHasta);
 
-  const filtered = useMemo(() => {
-    return data
-      .filter(msg => {
-        if (msg.direction !== 'outbound') return false;
-        if (fDe && !(msg.from_number || '').toLowerCase().includes(fDe.toLowerCase())) return false;
-        if (fPara && !(msg.to_number || '').toLowerCase().includes(fPara.toLowerCase())) return false;
-        if (fMsg && !(msg.mensaje || '').toLowerCase().includes(fMsg.toLowerCase())) return false;
-        if (fEst && !(msg.estado || '').toLowerCase().includes(fEst.toLowerCase())) return false;
-        if (fFechaDesde && (!msg.fecha_creacion || (msg.fecha_creacion.split('T')[0] || msg.fecha_creacion) < fFechaDesde)) return false;
-        if (fFechaHasta && (!msg.fecha_creacion || (msg.fecha_creacion.split('T')[0] || msg.fecha_creacion) > fFechaHasta)) return false;
-        return true;
-      })
-      .sort((a, b) => {
-        const dateA = a.fecha_creacion || '';
-        const dateB = b.fecha_creacion || '';
-        if (dateA > dateB) return -1;
-        if (dateA < dateB) return 1;
-        return (b.id || 0) - (a.id || 0);
+      const r = await fetch(`/api/mensajes?${params.toString()}`, {
+        headers: { 'X-Cliente-Id': String(cId), 'X-Usuario-Id': String(uId) },
       });
-  }, [data, fDe, fPara, fMsg, fEst, fFechaDesde, fFechaHasta]);
+      if (r.ok) {
+        const j = await r.json();
+        setData(j.data || []);
+        setTotal(j.total || 0);
+      } else {
+        setData([]);
+        setTotal(0);
+      }
+    } catch {
+      setData([]);
+      setTotal(0);
+    } finally {
+      setLoading(false);
+    }
+  }, [state.user?.cliente_id, state.user?.id, page, fDir, fDe, fPara, fMsg, fEst, fFechaDesde, fFechaHasta]);
 
-  const total = filtered.length;
+  useEffect(() => {
+    fetchData();
+  }, [fetchData]);
+
+  const hasFilters = !!(fDe || fPara || fDir || fMsg || fEst || fFechaDesde || fFechaHasta);
   const totalPages = Math.max(1, Math.ceil(total / pageSize));
   const safePage = Math.min(page, totalPages - 1);
-  const paginated = filtered.slice(safePage * pageSize, (safePage + 1) * pageSize);
+  const paginated = data;
 
   return (
     <div id="app">
@@ -116,7 +134,7 @@ export default function HistoryPage() {
                 <label style={{ fontSize: 12, display: 'flex', flexDirection: 'column', gap: 2 }}>Desde <input className="col-filter" type="date" value={fFechaDesde} onChange={e => { setFFechaDesde(e.target.value); setPage(0); }} /></label>
                 <label style={{ fontSize: 12, display: 'flex', flexDirection: 'column', gap: 2 }}>Hasta <input className="col-filter" type="date" value={fFechaHasta} onChange={e => { setFFechaHasta(e.target.value); setPage(0); }} /></label>
                 {(fFechaDesde || fFechaHasta) && <button className="btn btn-outline btn-sm" onClick={() => { setFFechaDesde(''); setFFechaHasta(''); setPage(0); }}>Limpiar fechas</button>}
-                <span style={{ fontSize: 12, color: '#667781', marginLeft: 'auto' }}>{total} registros{total !== filtered.length ? ` (filtrados de ${data.length})` : ''}</span>
+                <span style={{ fontSize: 12, color: '#667781', marginLeft: 'auto' }}>{total} registros{hasFilters ? ' (filtrados)' : ''}</span>
               </div>
               <div className="table-container">
                 <table className="table">
@@ -125,7 +143,7 @@ export default function HistoryPage() {
                       <th>ID</th>
                       <th>De<div><input className="col-filter" value={fDe} onChange={e => { setFDe(e.target.value); setPage(0); }} placeholder="Filtrar..." /></div></th>
                       <th>Para<div><input className="col-filter" value={fPara} onChange={e => { setFPara(e.target.value); setPage(0); }} placeholder="Filtrar..." /></div></th>
-                      <th>Dirección<div><select className="col-filter" value="outbound" disabled><option value="outbound">Saliente</option></select></div></th>
+                      <th>Dirección<div><select className="col-filter" value={fDir} onChange={e => { setFDir(e.target.value); setPage(0); }}><option value="">Todas</option><option value="outbound">Saliente</option><option value="inbound">Entrante</option></select></div></th>
                       <th>Mensaje<div><input className="col-filter" value={fMsg} onChange={e => { setFMsg(e.target.value); setPage(0); }} placeholder="Filtrar..." /></div></th>
                       <th>Estado<div><input className="col-filter" value={fEst} onChange={e => { setFEst(e.target.value); setPage(0); }} placeholder="Filtrar..." /></div></th>
                       <th>Wamid</th>
@@ -147,7 +165,7 @@ export default function HistoryPage() {
                           <td>{msg.mensaje || '-'}</td>
                           <td>{msg.estado || '-'}</td>
                           <td style={{ fontSize: 11 }}>{msg.wamid ? msg.wamid.slice(0, 20) + '…' : '-'}</td>
-                          <td>{msg.fecha_creacion ? formatDate(msg.fecha_creacion) : '-'}</td>
+                          <td style={{ whiteSpace: 'nowrap' }}>{msg.fecha_creacion ? formatColombiaDate(msg.fecha_creacion) : '-'}</td>
                         </tr>
                       ))
                     )}

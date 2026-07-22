@@ -14,8 +14,26 @@ export async function GET(req: NextRequest) {
   const direction = searchParams.get('direction');
   const estado = searchParams.get('estado');
   const search = searchParams.get('search');
+  const clienteNombre = searchParams.get('cliente_nombre');
+  const fromNumber = searchParams.get('from_number');
+  const toNumber = searchParams.get('to_number');
+  const mensaje = searchParams.get('mensaje');
+  const fechaDesde = searchParams.get('fecha_desde');
+  const fechaHasta = searchParams.get('fecha_hasta');
 
   const supabase = getServerSupabase();
+
+  let clienteIds: number[] | null = null;
+  if (clienteNombre) {
+    const { data: clientes } = await supabase
+      .from('clientes_whatsapp')
+      .select('id')
+      .ilike('nombre_comercial', `%${clienteNombre}%`);
+    clienteIds = (clientes || []).map((c: any) => c.id);
+    if (clienteIds.length === 0) {
+      return NextResponse.json({ data: [], total: 0, page, pageSize });
+    }
+  }
 
   let query = supabase
     .from('mensajes_whatsapp')
@@ -30,6 +48,24 @@ export async function GET(req: NextRequest) {
   }
   if (search) {
     query = query.or(`from_number.ilike.%${search}%,to_number.ilike.%${search}%,mensaje.ilike.%${search}%`);
+  }
+  if (clienteIds) {
+    query = query.in('cliente_id', clienteIds);
+  }
+  if (fromNumber) {
+    query = query.ilike('from_number', `%${fromNumber}%`);
+  }
+  if (toNumber) {
+    query = query.ilike('to_number', `%${toNumber}%`);
+  }
+  if (mensaje) {
+    query = query.ilike('mensaje', `%${mensaje}%`);
+  }
+  if (fechaDesde) {
+    query = query.gte('fecha_creacion', fechaDesde);
+  }
+  if (fechaHasta) {
+    query = query.lte('fecha_creacion', `${fechaHasta}T23:59:59`);
   }
 
   const from = page * pageSize;

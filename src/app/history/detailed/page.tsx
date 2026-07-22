@@ -3,14 +3,25 @@
 import { useApp } from '@/lib/store';
 import { Sidebar } from '@/components/ui/Sidebar';
 import { useRoleGuard } from '@/hooks/useRoleGuard';
-import { useMemo, useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { Card } from '@/components/ui/Card';
 
-function formatDate(dateStr: string) {
+function formatColombiaDate(dateStr: string) {
   if (!dateStr) return '-';
   try {
-    const d = new Date(dateStr);
-    return isNaN(d.getTime()) ? dateStr : d.toLocaleDateString('es-CO', { year: 'numeric', month: '2-digit', day: '2-digit' });
+    const d = new Date(dateStr.endsWith('Z') ? dateStr : dateStr + 'Z');
+    if (isNaN(d.getTime())) return dateStr;
+    const p = new Intl.DateTimeFormat('es-CO', {
+      timeZone: 'America/Bogota',
+      year: 'numeric',
+      month: '2-digit',
+      day: '2-digit',
+      hour: '2-digit',
+      minute: '2-digit',
+      hour12: false,
+    }).formatToParts(d);
+    const get = (t: string) => p.find(x => x.type === t)?.value || '00';
+    return `${get('year')}/${get('month')}/${get('day')} ${get('hour')}:${get('minute')}`;
   } catch {
     return dateStr;
   }
@@ -32,39 +43,53 @@ export default function HistoryDetailedPage() {
   const [fCliente, setFCliente] = useState('');
   const [fFechaDesde, setFFechaDesde] = useState('');
   const [fFechaHasta, setFFechaHasta] = useState('');
+  const [total, setTotal] = useState(0);
 
-  useEffect(() => {
+  const fetchData = useCallback(async () => {
     const cId = state.user?.cliente_id;
     const uId = state.user?.id;
     if (!cId || !uId) return;
     setLoading(true);
-    fetch('/api/history-detailed', {
-      headers: { 'X-Cliente-Id': String(cId), 'X-Usuario-Id': String(uId) },
-    })
-      .then(r => r.ok ? r.json() : { data: [] })
-      .then(j => { setData(j.data || []); })
-      .catch(() => setData([]))
-      .finally(() => setLoading(false));
-  }, [state.user?.cliente_id, state.user?.id]);
+    try {
+      const params = new URLSearchParams();
+      params.set('page', String(page));
+      params.set('pageSize', String(pageSize));
+      if (fDir) params.set('direction', fDir);
+      if (fCliente) params.set('cliente_nombre', fCliente);
+      if (fDe) params.set('from_number', fDe);
+      if (fPara) params.set('to_number', fPara);
+      if (fMsg) params.set('mensaje', fMsg);
+      if (fEst) params.set('estado', fEst);
+      if (fFechaDesde) params.set('fecha_desde', fFechaDesde);
+      if (fFechaHasta) params.set('fecha_hasta', fFechaHasta);
 
-  const filtered = useMemo(() => {
-    return data.filter(msg => {
-      if (fDe && !(msg.from_number || '').toLowerCase().includes(fDe.toLowerCase())) return false;
-      if (fPara && !(msg.to_number || '').toLowerCase().includes(fPara.toLowerCase())) return false;
-      if (fDir && msg.direction !== fDir) return false;
-      if (fMsg && !(msg.mensaje || '').toLowerCase().includes(fMsg.toLowerCase())) return false;
-      if (fEst && !(msg.estado || '').toLowerCase().includes(fEst.toLowerCase())) return false;
-      if (fCliente && !(msg.cliente_nombre || '').toLowerCase().includes(fCliente.toLowerCase())) return false;
-      if (fFechaDesde && (!msg.fecha_creacion || (msg.fecha_creacion.split('T')[0] || msg.fecha_creacion) < fFechaDesde)) return false;
-      if (fFechaHasta && (!msg.fecha_creacion || (msg.fecha_creacion.split('T')[0] || msg.fecha_creacion) > fFechaHasta)) return false;
-      return true;
-    });
-  }, [data, fDe, fPara, fDir, fMsg, fEst, fCliente, fFechaDesde, fFechaHasta]);
+      const r = await fetch(`/api/history-detailed?${params.toString()}`, {
+        headers: { 'X-Cliente-Id': String(cId), 'X-Usuario-Id': String(uId) },
+      });
+      if (r.ok) {
+        const j = await r.json();
+        setData(j.data || []);
+        setTotal(j.total || 0);
+      } else {
+        setData([]);
+        setTotal(0);
+      }
+    } catch {
+      setData([]);
+      setTotal(0);
+    } finally {
+      setLoading(false);
+    }
+  }, [state.user?.cliente_id, state.user?.id, page, fDir, fCliente, fDe, fPara, fMsg, fEst, fFechaDesde, fFechaHasta]);
 
-  const total = filtered.length;
+  useEffect(() => {
+    fetchData();
+  }, [fetchData]);
+
+  const hasFilters = !!(fCliente || fDe || fPara || fDir || fMsg || fEst || fFechaDesde || fFechaHasta);
   const totalPages = Math.max(1, Math.ceil(total / pageSize));
   const safePage = Math.min(page, totalPages - 1);
-  const paginated = filtered.slice(safePage * pageSize, (safePage + 1) * pageSize);
+  const paginated = data;
 
   return (
     <div id="app">
@@ -110,7 +135,7 @@ export default function HistoryDetailedPage() {
                 <label style={{ fontSize: 12, display: 'flex', flexDirection: 'column', gap: 2 }}>Desde <input className="col-filter" type="date" value={fFechaDesde} onChange={e => { setFFechaDesde(e.target.value); setPage(0); }} /></label>
                 <label style={{ fontSize: 12, display: 'flex', flexDirection: 'column', gap: 2 }}>Hasta <input className="col-filter" type="date" value={fFechaHasta} onChange={e => { setFFechaHasta(e.target.value); setPage(0); }} /></label>
                 {(fFechaDesde || fFechaHasta) && <button className="btn btn-outline btn-sm" onClick={() => { setFFechaDesde(''); setFFechaHasta(''); setPage(0); }}>Limpiar fechas</button>}
-                <span style={{ fontSize: 12, color: '#667781', marginLeft: 'auto' }}>{total} registros{total !== filtered.length ? ` (filtrados de ${data.length})` : ''}</span>
+                <span style={{ fontSize: 12, color: '#667781', marginLeft: 'auto' }}>{total} registros{hasFilters ? ' (filtrados)' : ''}</span>
               </div>
               <div className="table-container">
                 <table className="table">
@@ -143,7 +168,7 @@ export default function HistoryDetailedPage() {
                           <td>{msg.mensaje || '-'}</td>
                           <td>{msg.estado || '-'}</td>
                           <td style={{ fontSize: 11 }}>{msg.wamid ? msg.wamid.slice(0, 20) + '...' : '-'}</td>
-                          <td>{msg.fecha_creacion ? formatDate(msg.fecha_creacion) : '-'}</td>
+                          <td style={{ whiteSpace: 'nowrap' }}>{msg.fecha_creacion ? formatColombiaDate(msg.fecha_creacion) : '-'}</td>
                         </tr>
                       ))
                     )}

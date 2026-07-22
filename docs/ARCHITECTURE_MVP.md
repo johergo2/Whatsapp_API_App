@@ -129,9 +129,29 @@ Meta → POST /api/webhook
   → (Opcional) Reenvía a Chatwoot
 ```
 
+## Control de Acceso por Rol
+
+Cada ruta del frontend tiene un conjunto de roles permitidos definido en `hooks/useRoleGuard.ts`:
+
+| Ruta                | superadmin | usuario | envíos |
+|---------------------|:----------:|:-------:|:------:|
+| `/` (Dashboard)     | ✅         | ✅      | ✅     |
+| `/chat`             | ✅         | ✅      | ❌     |
+| `/templates`        | ✅         | ✅      | ❌     |
+| `/send`             | ✅         | ✅      | ❌     |
+| `/prospects`        | ✅         | ✅      | ✅     |
+| `/history`          | ✅         | ✅      | ❌     |
+| `/history/detail`   | ✅         | ❌      | ❌     |
+| `/history/detailed` | ✅         | ❌      | ❌     |
+| `/upload`           | ✅         | ✅      | ❌     |
+
+Sin sesión activa → redirige a `/login`. Sesión activa pero ruta no permitida → redirige a Dashboard (`/`).
+
+El sidebar también filtra los items según el rol del usuario (ver `Sidebar.tsx`).
+
 ## Principios de Diseño
 1. **Todo pasa por API Routes** — el navegador nunca habla directo a Supabase
-2. **Autenticación multi-usuario** — header `X-Cliente-Id` valida pertenencia via `usuarios_clientes`
+2. **Autenticación multi-usuario** — header `X-Cliente-Id` valida pertenencia via `usuarios_clientes`, más control de acceso por rol via `useRoleGuard`
 3. **Sin modo demo** — error real si credenciales inválidas o usuario sin cliente
 4. **Estado global** — React Context (`store.tsx`) mantiene estado UI + usuario + cliente
 5. **Misma DB para desarrollo y producción** — los datos de prueba se borran manualmente
