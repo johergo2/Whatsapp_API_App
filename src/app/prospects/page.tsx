@@ -125,6 +125,11 @@ export default function ProspectsPage() {
         }
       }
     } else {
+      // TEMPORAL: rol envíos limitado a 10 prospectos
+      if (state.user?.rol === 'envíos' && state.prospects.length >= 10) {
+        alert('Rol "envíos": máximo 10 prospectos. Elimine algunos antes de agregar más.');
+        return;
+      }
       if (!state.demoMode) {
         try {
           const added = await addProspect(data);
@@ -284,6 +289,13 @@ export default function ProspectsPage() {
       if (prospects.length === 0) {
         setImportOpen(false);
         alert('No se encontraron prospectos válidos en el CSV');
+        return;
+      }
+
+      // TEMPORAL: rol envíos limitado a 10 prospectos
+      if (state.user?.rol === 'envíos' && prospects.length > 10) {
+        setImportOpen(false);
+        alert(`Rol "envíos": máximo 10 prospectos. El archivo contiene ${prospects.length}.`);
         return;
       }
 
@@ -518,15 +530,18 @@ export default function ProspectsPage() {
               <div className="toolbar" style={{ gap: 12, flexWrap: 'wrap' }}>
                 <div className="form-group" style={{ minWidth: 200, marginBottom: 0 }}>
                   <label style={{ fontSize: 12 }}>Plantilla para enviar</label>
-                  <select
-                    value={state.prosTemplateId ?? ''}
-                    onChange={(e) => dispatch({ type: 'SET_PROS_TEMPLATE_ID', payload: e.target.value ? Number(e.target.value) : null })}
-                  >
-                    <option value="">-- Seleccione --</option>
-                    {state.templates.map((t) => (
-                      <option key={t.id} value={t.id}>{t.name}</option>
-                    ))}
-                  </select>
+                    <select
+                      value={state.prosTemplateId ?? ''}
+                      onChange={(e) => dispatch({ type: 'SET_PROS_TEMPLATE_ID', payload: e.target.value ? Number(e.target.value) : null })}
+                    >
+                      <option value="">-- Seleccione --</option>
+                      {/* TEMPORAL: envios solo ve la plantilla "Solicita permiso a co-propietarios" */}
+                      {state.templates
+                        .filter(t => state.user?.rol !== 'envíos' || t.name === 'Solicita permiso a co-propietarios')
+                        .map((t) => (
+                        <option key={t.id} value={t.id}>{t.name}</option>
+                      ))}
+                    </select>
                 </div>
                 <div style={{ textAlign: 'right', fontSize: 12, color: '#667781', marginLeft: 'auto' }}>
                   <div>Plan: <strong>{state.cliente?.plan || '-'}</strong></div>

@@ -114,7 +114,7 @@ export interface Usuario {
   id: number;
   nombre: string;
   email?: string;
-  rol: 'superadmin' | 'usuario';
+  rol: 'superadmin' | 'usuario' | 'envíos';
   activo: boolean;
   cliente_id: number | null;
   cliente_ids: number[];

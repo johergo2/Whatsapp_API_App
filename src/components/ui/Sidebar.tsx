@@ -26,6 +26,14 @@ export function Sidebar() {
 
   const current = pathname === '/' ? 'dashboard' : pathname.slice(1);
 
+  function isAllowed(item: typeof NAV_ITEMS[number]): boolean {
+    if (item.superadminOnly) return state.user?.rol === 'superadmin';
+    if (state.user?.rol === 'envíos') {
+      return ['dashboard', 'prospects'].includes(item.section);
+    }
+    return true;
+  }
+
   return (
     <aside className="sidebar" id="sidebar">
       <div className="sidebar-brand" style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 6, padding: '8px 12px', position: 'relative' }}>
@@ -62,7 +70,7 @@ export function Sidebar() {
         </button>
       </div>
       <nav className="sidebar-nav">
-        {NAV_ITEMS.filter(item => !item.superadminOnly || state.user?.rol === 'superadmin').map((item) => (
+        {NAV_ITEMS.filter(isAllowed).map((item) => (
           <a
             key={item.section}
             className={`nav-item ${pathname === '/' ? 'dashboard' : pathname.slice(1) === item.section ? 'active' : ''}`}

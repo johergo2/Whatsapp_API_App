@@ -2,12 +2,14 @@
 
 import { useApp } from '@/lib/store';
 import { Sidebar } from '@/components/ui/Sidebar';
+import { useRoleGuard } from '@/hooks/useRoleGuard';
 import { useState, useEffect } from 'react';
 import { Card } from '@/components/ui/Card';
 import { upsertSendFormData } from '@/lib/services';
 import type { SendFormValues } from '@/types';
 
 export default function SendPage() {
+  useRoleGuard();
   const { state, dispatch } = useApp();
   const [selectedTplId, setSelectedTplId] = useState<number | null>(null);
   const [form, setForm] = useState<SendFormValues>({});

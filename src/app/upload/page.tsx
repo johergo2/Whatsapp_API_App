@@ -2,6 +2,7 @@
 
 import { useApp } from '@/lib/store';
 import { Sidebar } from '@/components/ui/Sidebar';
+import { useRoleGuard } from '@/hooks/useRoleGuard';
 import { Card } from '@/components/ui/Card';
 import { useState, useRef } from 'react';
 import { getSupabase } from '@/lib/supabase';
@@ -17,6 +18,7 @@ interface UploadResult {
 }
 
 export default function UploadPage() {
+  useRoleGuard();
   const { state, dispatch } = useApp();
   const inputRef = useRef<HTMLInputElement>(null);
   const [uploading, setUploading] = useState(false);

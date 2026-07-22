@@ -239,3 +239,108 @@ FLUJO_ENVIO.md: DIAGRAMA DE FLUJO DE MENSAJES (17/07/2026)
   Webhook (inbound + status), Historial
 - Tablas y campos involucrados detallados
 - Orden de resolucion de textos (prospecto > send_form_data > vacio)
+
+============================================================
+CARGUE DE ARCHIVOS Y CABECERA POR TIPO DE PLANTILLA (20/07/2026)
+============================================================
+
+NUEVA PAGINA: Cargue de Archivos (/upload)
+- Pagina con drag-and-drop y seleccion multiple de archivos
+- Validacion client-side: solo PNG, PDF y MP4
+- Subida directa a Supabase Storage (bucket publico documentos) usando getSupabase()
+- Los archivos se guardan con el nombre original (sin timestamp), upsert: true
+- Barra de progreso y tabla de resultados con nombre del archivo en bucket
+- NO requiere API route intermedia (se elimino /api/upload-documentos)
+
+SIDEBAR
+- Nuevo item "Cargue de Archivos" en NAV_ITEMS (visible para todos los roles)
+
+SUPABASE STORAGE — RLS POLICIES
+- Agregadas 4 politicas RSL al bucket documentos en storage.objects:
+  * public_insert_documentos (INSERT)
+  * public_select_documentos (SELECT)
+  * public_update_documentos (UPDATE)
+  * public_delete_documentos (DELETE)
+
+ENV VARIABLES
+- Agregadas NEXT_PUBLIC_SUPABASE_URL y NEXT_PUBLIC_SUPABASE_ANON_KEY
+  al .env.local (necesarias para subida client-side desde el navegador)
+
+PROSPECTOS — CAMPO DE ARCHIVO (no URL)
+- Inputs de adjunto_cabecera y footer_imgs cambiados de type="url" a type="text"
+- Placeholders cambiados de "URL..." a "Nombre archivo..."
+- Modal de nuevo prospecto: adjunto_cabecera y footer_imgs se precargan
+  desde los valores por defecto de "Enviar mensajes"
+
+PROSPECTOS — ORDEN DE COLUMNAS
+- Nuevo orden: Nombre, Telefono, Adjunto Cabecera, Img 1-4 (+ icono caption),
+  Texto 1-6, Estado, Acciones
+- Las columnas de imagen ahora van antes que los textos
+
+ENVIO DE MENSAJES — HEADER TYPE
+- Send page (/send): labels cambiados de "URL imagen N" a "Nombre archivo imagen N",
+  inputs type="text", placeholder "Nombre del archivo"
+
+SEND-MESSAGE — HEADER TYPE
+- Endpoint /api/send-message ahora acepta header_type en el body
+- Usa header_type para decidir el formato del componente header:
+  'document' -> { type: 'document', document: { link, filename } }
+  'video'    -> { type: 'video', video: { link } }
+  'image'    -> { type: 'image', image: { link } } (default)
+- Si no se envia header_type, mantiene compatibilidad: asume IMAGE
+
+NORMALIZE URL — URL DIRECTA DE SUPABASE
+- send-message/route.ts: normalizeUrl ahora genera URL publica directa de Supabase
+  en vez de proxy via /api/documento
+- send-media/route.ts: agregada misma funcion normalizeUrl
+- Formato: {supabaseUrl}/storage/v1/object/public/documentos/{filename}
+- Esto permite que Meta descargue los archivos sin importar si la app esta en
+  localhost o produccion (el bucket documentos es publico)
+
+PROSPECTOS — ENVIO DE FOOTER IMAGES
+- Despues de enviar la plantilla exitosamente, ahora envia las footer_imgs
+  como mensajes independientes via /api/send-media
+- 3 segundos de espera entre cada imagen
+- Cada imagen puede incluir caption desde el prospecto (icono lapiz)
+- Logging en la barra de progreso: "Imagen N enviada" / "Imagen N error"
+
+MANUAL DE USUARIO
+- Creado docs/Manual_de_Usuario_Mercurio_Software.docx (Word, 749KB)
+- 8 capturas de pantalla automaticas de la aplicacion
+- 11 secciones: Introduccion, Requisitos, Login, Dashboard, Plantillas,
+  Configurar Mensajes, Prospectos, Chat, Cargue Archivos, Historial, Soporte
+- Incluye tabla de errores comunes y glosario de terminos
+
+============================================================
+[TEMPORAL] ROL ENVÍOS: LÍMITE DE 10 PROSPECTOS (21/07/2026)
+============================================================
+
+- CAMBIO TEMPORAL — será eliminado cuando el usuario lo confirme
+- Rol "envíos": validación client-side en prospectos/page.tsx para limitar a 10 prospectos
+- saveProspect(): si rol === 'envíos' y state.prospects.length >= 10, alerta y cancela
+- importCSV(): si rol === 'envíos' y prospects.length > 10, alerta y cancela
+- No afecta a roles superadmin ni usuario
+- Archivos modificados: src/app/prospects/page.tsx (2 validaciones)
+
+============================================================
+***** [TEMPORAL] LOGIN: OCULTAR LINK DE REGISTRO (21/07/2026) *****
+============================================================
+- CAMBIO TEMPORAL — se revierte cuando el usuario lo solicite
+- LoginForm.tsx: comentado el Link a /register en el footer del login
+- LoginForm.tsx: comentado el import de next/link
+- La funcionalidad de /register sigue intacta (accesible via URL directa)
+- Para restaurar:
+  1. Descomentar línea 6: `import Link from 'next/link';`
+  2. Descomentar las líneas 134-138 (div.login-footer con Link)
+- Archivos modificados: src/components/LoginForm.tsx
+
+============================================================
+***** [TEMPORAL] PROSPECTOS: ENVÍOS VE SOLO 1 PLANTILLA (21/07/2026) *****
+============================================================
+- CAMBIO TEMPORAL — se revierte cuando el usuario lo solicite
+- Rol "envíos": dropdown de plantillas en Prospectos filtra para mostrar solo
+  la plantilla "Solicita permiso a co-propietarios"
+- Otros roles (superadmin, usuario) ven todas las plantillas sin cambio
+- Para restaurar: eliminar el .filter() del map de templates en prospects/page.tsx
+  y el comentario asociado
+- Archivos modificados: src/app/prospects/page.tsx

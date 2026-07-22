@@ -3,7 +3,9 @@
 import { useState } from 'react';
 import { useApp } from '@/lib/store';
 import { useRouter } from 'next/navigation';
-import Link from 'next/link';
+// ***** TEMPORAL: importar Link cuando se restaure el registro
+// import Link from 'next/link';
+// ***********************************
 
 export function LoginForm() {
   const { dispatch } = useApp();
@@ -131,11 +133,13 @@ export function LoginForm() {
             )}
           </button>
         </form>
+        {/** TODO TEMPORAL: restaurar link de registro cuando el usuario lo solicite
         <div className="login-footer" style={{ marginTop: 16, textAlign: 'center' }}>
           <Link href="/register" style={{ color: '#075E54', fontSize: 14, textDecoration: 'underline' }}>
             ¿No tienes cuenta? Regístrate
           </Link>
         </div>
+        ***********************************/}
         {error && <p className="login-error">{error}</p>}
       </div>
     </div>

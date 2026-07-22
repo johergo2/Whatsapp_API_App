@@ -32,7 +32,7 @@ Navegador → API Routes (Vercel/localhost) → Supabase (PostgreSQL)
 Meta Cloud API → Webhook (/api/webhook) → Supabase (inbound + status)
 ```
 
-Todas las operaciones pasan por API Routes que validan el header `X-Cliente-Id`. No hay llamadas directas del navegador a Supabase.
+Todas las operaciones pasan por API Routes que validan el header `X-Cliente-Id`, excepto la subida de archivos a `documentos` que se hace directo desde el frontend con la anon key (bucket público).
 
 ## Estructura del Proyecto
 ```
@@ -58,6 +58,7 @@ WhatsApp_API_App/
 │   │   │   ├── upload/route.ts          # POST - subir archivo a bucket chat_uploads
 │   │   │   ├── history-detail/route.ts  # GET - mens+estados agg (superadmin)
 │   │   │   └── history-detailed/route.ts# GET - mens+cliente nombre (superadmin)
+│   │   ├── upload/page.tsx              # Cargue de archivos a bucket documentos (client-side)
 │   │   ├── templates/page.tsx           # Gestión de plantillas (con nomb_mio)
 │   │   ├── prospects/page.tsx           # Gestión de prospectos + envío
 │   │   ├── send/page.tsx                # Envío de mensajes
@@ -93,10 +94,10 @@ WhatsApp_API_App/
 ```
 
 ## Variables de Entorno (`.env.local` y Vercel)
-- `SUPABASE_URL` — URL del proyecto Supabase
-- `SUPABASE_ANON_KEY` — Publishable key de Supabase
+- `SUPABASE_URL` / `NEXT_PUBLIC_SUPABASE_URL` — URL del proyecto Supabase
+- `SUPABASE_ANON_KEY` / `NEXT_PUBLIC_SUPABASE_ANON_KEY` — Publishable key de Supabase
 - `SUPABASE_SERVICE_ROLE_KEY` — Service role key de Supabase
-- `NEXT_PUBLIC_APP_URL` — URL pública de la app
+- `NEXT_PUBLIC_APP_URL` — URL pública de la app (legacy, ya no usado para enlaces de archivos)
 - `META_TOKEN` — Token de Meta Cloud API (en `variables_whatsapp` por cliente)
 
 ## Base de Datos — Tablas Principales
@@ -106,6 +107,12 @@ WhatsApp_API_App/
 |-------|-------------|
 | `usuarios` | Usuarios del sistema: `id`, `nombre` (username único), `email` (opcional), `password_hash` (SHA256), `rol` (`superadmin`/`usuario`), `activo` (bool) |
 | `usuarios_clientes` | Relación N:M usuario-cliente: `usuario_id`, `cliente_id`, trigger para validar pertenencia |
+
+### Storage
+| Bucket | Descripción |
+|--------|-------------|
+| `chat_uploads` | Archivos multimedia enviados/recibidos en chat. RLS: pública insert/select |
+| `documentos` | Archivos para adjuntos de cabecera de plantillas (PNG, PDF, MP4). Público. Subida client-side. RLS: pública insert/select/update/delete |
 
 ### Core (original)
 | Tabla | Descripción |
@@ -158,12 +165,18 @@ WhatsApp_API_App/
 - **Historial Detallado** (`/history/detailed`): superadmin. JOIN mensajes_whatsapp + clientes_whatsapp, agrega columna Cliente (`nombre_comercial`). API `/api/history-detailed`.
 - **Sidebar**: ítems `Historial Soporte` y `Historial Detallado` visibles solo para `rol === 'superadmin'`
 - **Scrollbar**: reglas `-webkit-scrollbar` aisladas con `@media (-webkit-min-device-pixel-ratio: 0)` + `scrollbar-width`/`scrollbar-color` estándar para Firefox
+- **Cargue de Archivos**: nueva página `/upload` con drag-and-drop, validación client-side (PNG, PDF, MP4), subida directa a Supabase (bucket público `documentos`) sin pasar por API route. Los archivos se guardan con el nombre original (`upsert: true`).
+- **Campos de archivo**: en Prospects y Send, los campos `adjunto_cabecera` y `footer_imgs` ahora aceptan nombre de archivo (no URL). El sistema resuelve a URL pública de Supabase automáticamente.
+- **Header type**: `send-message/route.ts` usa `header_type` de la plantilla para decidir IMAGE/DOCUMENT/VIDEO, en vez de asumir IMAGE siempre.
+- **Footer images**: al enviar desde Prospects, después de la plantilla se envían las imágenes de footer como mensajes separados vía `send-media` con 3s de intervalo.
+- **normalizeUrl**: tanto `send-message` como `send-media` ahora generan URL pública directa de Supabase (`storage/v1/object/public/documentos/...`) en vez de proxy via `/api/documento`.
+- **Manual de usuario**: creado `docs/Manual_de_Usuario_Mercurio_Software.docx` con 8 capturas de pantalla.
 
 ## Pendientes / Próximos Pasos
-- Opción de cargue de archivos al bucket `documentos` en Supabase Storage
 - Chat multiagente para responder mensajes entrantes desde la misma app (reemplazo de Chatwoot)
 - Asignación de conversaciones a agentes con persistencia de agente por contacto
 - Notificaciones en tiempo real para nuevos mensajes entrantes
+- RLS (Row Level Security) en tablas de datos por cliente
 
 ## Usuario Objetivo
 - Administradores de negocio que envían mensajes masivos por WhatsApp

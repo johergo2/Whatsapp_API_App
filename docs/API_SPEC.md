@@ -244,9 +244,10 @@ Envía un template message a través de Meta Cloud API.
   "to": "573001234567",
   "template_name": "ofrecer_whatsapp2",
   "language_code": "es_CO",
+  "header_type": "document",
   "nombre_clie": "Juan Pérez",
   "nomb_mio": "Jorge Hernán Gómez",
-  "header_image_url": "https://...",
+  "header_image_url": "nombre_archivo.pdf",
   "texto1": "valor",
   "texto2": "valor",
   "texto3": "valor",
@@ -254,18 +255,27 @@ Envía un template message a través de Meta Cloud API.
 }
 ```
 
-Para adjunto de tipo documento usar `header_document_url`, para video usar `header_video_url`.
+**Campos:**
+- `header_type` — tipo de cabecera según la plantilla: `none`, `image`, `document`, `video`. Determina el formato del componente header en Meta.
+- `header_image_url` / `header_document_url` / `header_video_url` — nombre del archivo (no URL) o URL completa. Si es nombre de archivo, el endpoint lo resuelve automáticamente a la URL pública de Supabase.
+
+**Resolución de URLs:**
+Si el valor de `header_image_url` (o `header_document_url` / `header_video_url`) no comienza con `http`, se convierte a:
+```
+{supabaseUrl}/storage/v1/object/public/documentos/{filename}
+```
 
 **Proceso:**
 1. Obtiene `phone_number_id` y `META_TOKEN` de la BD
-2. Envía a `https://graph.facebook.com/v21.0/{phone_number_id}/messages`
-3. Guarda en `mensajes_whatsapp`
-4. Incrementa `requests_usadas` en `clientes_whatsapp`
+2. Construye el componente header según `header_type` (image/document/video)
+3. Envía a `https://graph.facebook.com/v21.0/{phone_number_id}/messages`
+4. Guarda en `mensajes_whatsapp`
+5. Incrementa `requests_usadas` en `clientes_whatsapp`
 
 ---
 
 ### `POST /api/send-media`
-Envía imagen/video con texto opcional.
+Envía imagen/video con texto opcional. Soporta nombres de archivo (resuelve a Supabase public URL automáticamente).
 
 **Header:** `X-Cliente-Id: 1`
 
@@ -274,12 +284,14 @@ Envía imagen/video con texto opcional.
 {
   "cliente_id": 1,
   "to": "573001234567",
-  "image_url": "https://...",
-  "video_url": "https://...",
+  "image_url": "nombre_archivo.png",
+  "video_url": "nombre_archivo.mp4",
   "mensaje": "Texto del mensaje",
   "caption": "Texto debajo de la imagen"
 }
 ```
+
+**Resolución de URLs:** mismo comportamiento que `send-message`: si no comienza con `http`, se antepone `{supabaseUrl}/storage/v1/object/public/documentos/`.
 
 ---
 

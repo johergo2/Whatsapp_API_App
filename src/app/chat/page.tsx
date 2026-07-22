@@ -2,6 +2,7 @@
 
 import { useApp } from '@/lib/store';
 import { Sidebar } from '@/components/ui/Sidebar';
+import { useRoleGuard } from '@/hooks/useRoleGuard';
 import { useMemo, useState, useEffect, useRef, useCallback, FormEvent } from 'react';
 
 function timeAgo(dateStr: string) {
@@ -21,6 +22,7 @@ function timeAgo(dateStr: string) {
 }
 
 export default function ChatPage() {
+  useRoleGuard();
   const { state, dispatch } = useApp();
   const [conversations, setConversations] = useState<any[]>([]);
   const [search, setSearch] = useState('');
@@ -257,6 +259,7 @@ export default function ChatPage() {
       const { url } = await uploadRes.json();
 
       const isImage = file.type.startsWith('image/');
+      const isVideo = file.type.startsWith('video/');
       const res = await fetch('/api/send-media', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json', 'X-Cliente-Id': String(clienteId), 'X-Usuario-Id': String(usuarioId) },
@@ -264,7 +267,8 @@ export default function ChatPage() {
           cliente_id: clienteId,
           to: selectedTel,
           image_url: isImage ? url : null,
-          video_url: isImage ? null : url,
+          video_url: isVideo ? url : null,
+          document_url: (!isImage && !isVideo) ? url : null,
           caption: '',
           usuario_id: usuarioId,
         }),
@@ -475,10 +479,10 @@ export default function ChatPage() {
                             wordBreak: 'break-word',
                             boxShadow: '0 1px 1px rgba(0,0,0,.08)',
                           }}>
-                            {msg.mensaje?.startsWith('image:') || msg.mensaje?.startsWith('video:') ? (
+                            {msg.mensaje?.startsWith('image:') || msg.mensaje?.startsWith('video:') || msg.mensaje?.startsWith('document:') ? (
                               <>
                                 <span style={{ fontSize: 12, color: '#667781', display: 'block', marginBottom: 4 }}>
-                                  {msg.mensaje?.startsWith('image:') ? '🖼️ Imagen' : '🎬 Video'}
+                                  {msg.mensaje?.startsWith('image:') ? '🖼️ Imagen' : msg.mensaje?.startsWith('video:') ? '🎬 Video' : '📄 Documento'}
                                 </span>
                                 {msg.mensaje?.startsWith('image:') && (
                                   // eslint-disable-next-line @next/next/no-img-element
@@ -506,7 +510,7 @@ export default function ChatPage() {
                     <input
                       ref={fileInputRef}
                       type="file"
-                      accept="image/*,video/*"
+                      accept="image/*,video/*,.pdf,.txt,.doc,.docx,.xls,.xlsx,.ppt,.pptx"
                       onChange={e => { const f = e.target.files?.[0]; if (f) handleUploadMedia(f); }}
                       style={{ display: 'none' }}
                     />

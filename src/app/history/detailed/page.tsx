@@ -2,6 +2,7 @@
 
 import { useApp } from '@/lib/store';
 import { Sidebar } from '@/components/ui/Sidebar';
+import { useRoleGuard } from '@/hooks/useRoleGuard';
 import { useMemo, useState, useEffect } from 'react';
 import { Card } from '@/components/ui/Card';
 
@@ -16,6 +17,7 @@ function formatDate(dateStr: string) {
 }
 
 export default function HistoryDetailedPage() {
+  useRoleGuard();
   const { state, dispatch } = useApp();
   const [page, setPage] = useState(0);
   const [loading, setLoading] = useState(true);

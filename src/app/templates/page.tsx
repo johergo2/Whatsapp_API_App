@@ -2,6 +2,7 @@
 
 import { useApp } from '@/lib/store';
 import { Sidebar } from '@/components/ui/Sidebar';
+import { useRoleGuard } from '@/hooks/useRoleGuard';
 import { useState } from 'react';
 import { Card } from '@/components/ui/Card';
 import { Modal } from '@/components/ui/Modal';
@@ -9,6 +10,7 @@ import { addTemplate, updateTemplate, deleteTemplate } from '@/lib/services';
 import type { Plantilla } from '@/types';
 
 export default function TemplatesPage() {
+  useRoleGuard();
   const { state, dispatch } = useApp();
   const [modalOpen, setModalOpen] = useState(false);
   const [editingId, setEditingId] = useState<number | null>(null);

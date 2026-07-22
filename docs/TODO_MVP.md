@@ -95,6 +95,11 @@
 ## FASE 3 — Mejoras Post-MVP
 
 ### Funcionalidad
+- [x] Cargue de archivos al bucket documentos (pagina /upload con drag-and-drop, validacion client-side)
+- [x] Header type dinamico en send-message (image/document/video segun header_type de la plantilla)
+- [x] Envio de footer_imgs como mensajes separados tras la plantilla
+- [x] Campos de archivo aceptan nombre en vez de URL (adjunto_cabecera y footer_imgs)
+- [x] RLS policies para bucket documentos (insert/select/update/delete public)
 - [ ] RLS (Row Level Security) en Supabase para aislar datos por cliente
 - [ ] Editor de plantillas con preview visual
 - [ ] Programación de envíos (fecha/hora)

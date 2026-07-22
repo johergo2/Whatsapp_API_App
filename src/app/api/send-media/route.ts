@@ -5,14 +5,14 @@ import { getUsuarioId } from '@/lib/auth-utils';
 export async function POST(req: NextRequest) {
   try {
     const body = await req.json();
-    const { cliente_id, to, image_url, video_url, mensaje, caption, usuario_id: bodyUsuarioId } = body;
+    const { cliente_id, to, image_url, video_url, document_url, mensaje, caption, usuario_id: bodyUsuarioId } = body;
 
     if (!cliente_id || !to) {
       return NextResponse.json({ detail: 'cliente_id y to son obligatorios' }, { status: 400 });
     }
 
-    if (!mensaje && !image_url && !video_url) {
-      return NextResponse.json({ detail: 'Debe enviar mensaje, image_url o video_url' }, { status: 400 });
+    if (!mensaje && !image_url && !video_url && !document_url) {
+      return NextResponse.json({ detail: 'Debe enviar mensaje, image_url, video_url o document_url' }, { status: 400 });
     }
 
     const supabase = getServerSupabase();
@@ -58,7 +58,14 @@ export async function POST(req: NextRequest) {
     let payload: any = { messaging_product: 'whatsapp', to };
     let mensajeGuardar = '';
 
-    if (video_url && String(video_url).trim() !== '') {
+    if (document_url && String(document_url).trim() !== '') {
+      const link = normalizeUrl(String(document_url));
+      const filename = String(document_url).trim().split('/').pop() || 'documento';
+      payload.type = 'document';
+      payload.document = { link, filename };
+      if (caption) payload.document.caption = caption;
+      mensajeGuardar = `document: ${link}`;
+    } else if (video_url && String(video_url).trim() !== '') {
       const link = normalizeUrl(String(video_url));
       payload.type = 'video';
       payload.video = { link };
@@ -139,7 +146,7 @@ export async function POST(req: NextRequest) {
     }
 
     // 6. Limpiar archivo temporal de Storage
-    const urlToClean = image_url || video_url || '';
+    const urlToClean = image_url || video_url || document_url || '';
     if (urlToClean && urlToClean.includes('/storage/v1/object/public/chat_uploads/')) {
       const filePath = urlToClean.split('/public/chat_uploads/')[1];
       if (filePath) {
