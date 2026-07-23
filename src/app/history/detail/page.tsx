@@ -5,6 +5,7 @@ import { Sidebar } from '@/components/ui/Sidebar';
 import { useRoleGuard } from '@/hooks/useRoleGuard';
 import { useState, useEffect, useCallback } from 'react';
 import { Card } from '@/components/ui/Card';
+import * as XLSX from 'xlsx';
 
 function formatColombiaDate(dateStr: string) {
   if (!dateStr) return '-';
@@ -34,6 +35,7 @@ export default function HistoryDetailPage() {
   const [loading, setLoading] = useState(true);
   const [data, setData] = useState<any[]>([]);
   const [total, setTotal] = useState(0);
+  const [downloadLoading, setDownloadLoading] = useState(false);
   const pageSize = 20;
 
   const [fCliente, setFCliente] = useState('');
@@ -45,23 +47,70 @@ export default function HistoryDetailPage() {
   const [fFechaDesde, setFFechaDesde] = useState('');
   const [fFechaHasta, setFFechaHasta] = useState('');
 
+  const buildParams = useCallback((all = false) => {
+    const params = new URLSearchParams();
+    if (all) params.set('all', 'true');
+    if (fDir) params.set('direction', fDir);
+    if (fCliente) params.set('cliente_nombre', fCliente);
+    if (fDe) params.set('from_number', fDe);
+    if (fPara) params.set('to_number', fPara);
+    if (fMsg) params.set('mensaje', fMsg);
+    if (fEst) params.set('estado', fEst);
+    if (fFechaDesde) params.set('fecha_desde', fFechaDesde);
+    if (fFechaHasta) params.set('fecha_hasta', fFechaHasta);
+    return params;
+  }, [fDir, fCliente, fDe, fPara, fMsg, fEst, fFechaDesde, fFechaHasta]);
+
+  const exportExcel = useCallback(async () => {
+    const cId = state.user?.cliente_id;
+    const uId = state.user?.id;
+    if (!cId || !uId) return;
+    setDownloadLoading(true);
+    try {
+      const params = buildParams(true);
+      const r = await fetch(`/api/history-detail?${params.toString()}`, {
+        headers: { 'X-Cliente-Id': String(cId), 'X-Usuario-Id': String(uId) },
+      });
+      if (!r.ok) return;
+      const j = await r.json();
+      const rows = (j.data || []).map((row: any) => ({
+        ID: row.m_id,
+        Cliente: row.cliente_nombre,
+        De: row.from_number,
+        Para: row.to_number,
+        Dirección: row.direction,
+        Mensaje: row.mensaje,
+        Estado: row.estado,
+        'IDs detalle': row.id_detail,
+        'Estados detalle': row.e_estados_detail,
+        'Error código': row.error_codigo,
+        'Error detalle': row.error_detalle,
+        Wamid: row.wamid,
+        Fecha: row.fecha_creacion ? formatColombiaDate(row.fecha_creacion) : '',
+      }));
+      const ws = XLSX.utils.json_to_sheet(rows);
+      const wb = XLSX.utils.book_new();
+      XLSX.utils.book_append_sheet(wb, ws, 'Historial Soporte');
+      const cols = ['ID', 'Cliente', 'De', 'Para', 'Dirección', 'Mensaje', 'Estado', 'IDs detalle', 'Estados detalle', 'Error código', 'Error detalle', 'Wamid', 'Fecha'];
+      const wscols = cols.map(() => ({ wch: 20 }));
+      ws['!cols'] = wscols;
+      XLSX.writeFile(wb, `historial_soporte_${new Date().toISOString().slice(0, 10)}.xlsx`);
+    } catch {
+      // ignore
+    } finally {
+      setDownloadLoading(false);
+    }
+  }, [state.user?.cliente_id, state.user?.id, buildParams]);
+
   const fetchData = useCallback(async () => {
     const cId = state.user?.cliente_id;
     const uId = state.user?.id;
     if (!cId || !uId) return;
     setLoading(true);
     try {
-      const params = new URLSearchParams();
+      const params = buildParams();
       params.set('page', String(page));
       params.set('pageSize', String(pageSize));
-      if (fDir) params.set('direction', fDir);
-      if (fCliente) params.set('cliente_nombre', fCliente);
-      if (fDe) params.set('from_number', fDe);
-      if (fPara) params.set('to_number', fPara);
-      if (fMsg) params.set('mensaje', fMsg);
-      if (fEst) params.set('estado', fEst);
-      if (fFechaDesde) params.set('fecha_desde', fFechaDesde);
-      if (fFechaHasta) params.set('fecha_hasta', fFechaHasta);
 
       const r = await fetch(`/api/history-detail?${params.toString()}`, {
         headers: { 'X-Cliente-Id': String(cId), 'X-Usuario-Id': String(uId) },
@@ -80,7 +129,7 @@ export default function HistoryDetailPage() {
     } finally {
       setLoading(false);
     }
-  }, [state.user?.cliente_id, state.user?.id, page, fDir, fCliente, fDe, fPara, fMsg, fEst, fFechaDesde, fFechaHasta]);
+  }, [state.user?.cliente_id, state.user?.id, page, buildParams]);
 
   useEffect(() => {
     fetchData();
@@ -139,6 +188,16 @@ export default function HistoryDetailPage() {
                 <span style={{ fontSize: 12, color: '#667781', marginLeft: 'auto' }}>{total} registros{hasFilters ? ' (filtrados)' : ''}</span>
               </div>
               <div className="table-container">
+                <div style={{ marginBottom: 2, textAlign: 'center' }}>
+                  <button
+                    className="btn-link"
+                    style={{ fontSize: 13, fontWeight: 600, color: '#075E54', cursor: 'pointer', background: 'none', border: 'none', padding: '2px 0', textDecoration: 'underline' }}
+                    onClick={exportExcel}
+                    disabled={downloadLoading}
+                  >
+                    {downloadLoading ? 'Descargando...' : 'Descargar Excel'}
+                  </button>
+                </div>
                 <table className="table">
                   <thead>
                     <tr>

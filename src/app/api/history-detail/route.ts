@@ -9,8 +9,9 @@ export async function GET(req: NextRequest) {
   }
 
   const { searchParams } = new URL(req.url);
+  const all = searchParams.get('all') === 'true';
   const page = Math.max(0, parseInt(searchParams.get('page') || '0', 10));
-  const pageSize = Math.min(200, Math.max(1, parseInt(searchParams.get('pageSize') || '200', 10)));
+  const pageSize = all ? 100000 : Math.min(200, Math.max(1, parseInt(searchParams.get('pageSize') || '200', 10)));
   const direction = searchParams.get('direction');
   const clienteNombre = searchParams.get('cliente_nombre');
   const fromNumber = searchParams.get('from_number');
@@ -63,12 +64,14 @@ export async function GET(req: NextRequest) {
     query = query.lte('fecha_creacion', `${fechaHasta}T23:59:59`);
   }
 
-  const from = page * pageSize;
-  const to = from + pageSize - 1;
+  let q = query.order('id', { ascending: false });
+  if (!all) {
+    const from = page * pageSize;
+    const to = from + pageSize - 1;
+    q = q.range(from, to);
+  }
 
-  const { data, error, count } = await query
-    .order('id', { ascending: false })
-    .range(from, to);
+  const { data, error, count } = await q;
 
   if (error) {
     return NextResponse.json({ detail: error.message }, { status: 500 });
