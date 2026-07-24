@@ -116,7 +116,7 @@ export async function POST(req: NextRequest) {
         else if (message.document) { console.log('TRACE: ES DOCUMENTO id=', message.document.id, 'cid=', clienteId); mensajeText = `document:${message.document.id}:${clienteId}`; mensajeLista = '[documento]'; }
         else if (message.audio) { console.log('TRACE: es audio'); mensajeText = `audio:${message.audio.id}:${clienteId}`; mensajeLista = '[audio]'; }
         else if (message.video) { console.log('TRACE: es video'); mensajeText = `video:${message.video.id}:${clienteId}`; mensajeLista = '[video]'; }
-        else if (message.sticker) { console.log('TRACE: es sticker'); mensajeText = '[sticker recibido]'; }
+        else if (message.sticker) { console.log('TRACE: es sticker'); mensajeText = `image:${message.sticker.id}:${clienteId}`; mensajeLista = '[sticker]'; }
         else if (message.location) { console.log('TRACE: es location'); mensajeText = '[ubicación recibida]'; }
         else if (message.contacts) { console.log('TRACE: es contacts'); mensajeText = '[contacto recibido]'; }
         else if (message.reaction) { console.log('TRACE: es reaction'); mensajeText = `[reacción: ${message.reaction.emoji || ''}]`; }
