@@ -344,3 +344,33 @@ MANUAL DE USUARIO
 - Para restaurar: eliminar el .filter() del map de templates en prospects/page.tsx
   y el comentario asociado
 - Archivos modificados: src/app/prospects/page.tsx
+
+============================================================
+DESCARGAR EXCEL EN HISTORIAL (22/07/2026)
+============================================================
+
+- Nuevo botón "Descargar Excel" en las 3 pantallas de historial:
+  * Historial (/history)
+  * Historial Detallado (/history/detailed)
+  * Historial Soporte (/history/detail)
+- Botón centrado, sobre la tabla, dentro de la tarjeta blanca
+- Al hacer clic descarga un archivo .xlsx con TODOS los registros
+  filtrados actualmente (sin paginación)
+- Instalada librería xlsx (SheetJS) para generación de Excel client-side
+
+CAMBIOS EN API ROUTES:
+- GET /api/mensajes: nuevo query param all=true → retorna hasta 100k registros sin paginación
+- GET /api/history-detailed: nuevo query param all=true
+- GET /api/history-detail: nuevo query param all=true
+- pageSize se ajusta a 100000 cuando all=true, y no aplica .range()
+
+CAMBIOS EN FRONTEND:
+- src/app/history/page.tsx:
+  * Import xlsx
+  * buildParams() refactor: función común para parámetros de filtro
+  * exportExcel(): fetch con all=true, genera Excel con XLSX.writeFile
+  * Botón "Descargar Excel" centrado sobre la tabla
+- src/app/history/detailed/page.tsx: mismos cambios que history/page.tsx
+- src/app/history/detail/page.tsx: mismos cambios que history/page.tsx
+  * Columnas exportadas: ID, Cliente, De, Para, Dirección, Mensaje, Estado,
+    IDs detalle, Estados detalle, Error código, Error detalle, Wamid, Fecha

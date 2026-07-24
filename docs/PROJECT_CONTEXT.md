@@ -174,6 +174,7 @@ WhatsApp_API_App/
 - **Footer images**: al enviar desde Prospects, después de la plantilla se envían las imágenes de footer como mensajes separados vía `send-media` con 3s de intervalo.
 - **normalizeUrl**: tanto `send-message` como `send-media` ahora generan URL pública directa de Supabase (`storage/v1/object/public/documentos/...`) en vez de proxy via `/api/documento`.
 - **Manual de usuario**: creado `docs/Manual_de_Usuario_Mercurio_Software.docx` con 8 capturas de pantalla.
+- **Descargar Excel**: botón "Descargar Excel" en las 3 pantallas de historial (Historial, Historial Detallado, Historial Soporte). Genera .xlsx con todos los registros filtrados usando la librería `xlsx` (SheetJS). Las APIs `/api/mensajes`, `/api/history-detailed` y `/api/history-detail` soportan `?all=true` para retornar datos sin paginación.
 
 ## Pendientes / Próximos Pasos
 - [ ] **Revertir cambios temporales** (ver `docs/Cambios.txt` secciones `[TEMPORAL]`):

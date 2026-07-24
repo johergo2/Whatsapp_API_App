@@ -66,16 +66,32 @@ export default function HistoryPage() {
     if (!cId || !uId) return;
     setDownloadLoading(true);
     try {
-      const params = buildParams(true);
-      const r = await fetch(`/api/mensajes?${params.toString()}`, {
+      const baseParams = buildParams();
+      baseParams.set('pageSize', '200');
+
+      const r0 = await fetch(`/api/mensajes?${baseParams.toString()}&page=0`, {
         headers: { 'X-Cliente-Id': String(cId), 'X-Usuario-Id': String(uId) },
       });
-      if (!r.ok) return;
-      const j = await r.json();
-      const rows = (j.data || []).map((row: any) => ({
+      if (!r0.ok) return;
+      const j0 = await r0.json();
+      const total = j0.total || 0;
+      let allData = [...(j0.data || [])];
+      const totalPages = Math.ceil(total / 200);
+      for (let p = 1; p < totalPages; p++) {
+        baseParams.set('page', String(p));
+        const r = await fetch(`/api/mensajes?${baseParams.toString()}`, {
+          headers: { 'X-Cliente-Id': String(cId), 'X-Usuario-Id': String(uId) },
+        });
+        if (r.ok) {
+          const j = await r.json();
+          allData = allData.concat(j.data || []);
+        }
+      }
+
+      const rows = allData.map((row: any) => ({
         ID: row.id,
-        De: row.from_number,
-        Para: row.to_number,
+        De: Number(row.from_number),
+        Para: Number(row.to_number),
         Dirección: row.direction,
         Mensaje: row.mensaje,
         Estado: row.estado,
@@ -181,7 +197,7 @@ export default function HistoryPage() {
                 <span style={{ fontSize: 12, color: '#667781', marginLeft: 'auto' }}>{total} registros{hasFilters ? ' (filtrados)' : ''}</span>
               </div>
               <div className="table-container">
-                <div style={{ marginBottom: 2, textAlign: 'center' }}>
+                <div style={{ marginBottom: 2, textAlign: 'left', paddingLeft: '8cm' }}>
                   <button
                     className="btn-link"
                     style={{ fontSize: 13, fontWeight: 600, color: '#075E54', cursor: 'pointer', background: 'none', border: 'none', padding: '2px 0', textDecoration: 'underline' }}

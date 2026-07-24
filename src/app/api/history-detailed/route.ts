@@ -70,7 +70,9 @@ export async function GET(req: NextRequest) {
   }
 
   let q = query.order('fecha_creacion', { ascending: false });
-  if (!all) {
+  if (all) {
+    q = q.limit(1000000);
+  } else {
     const from = page * pageSize;
     const to = from + pageSize - 1;
     q = q.range(from, to);

@@ -97,6 +97,12 @@ export async function POST(req: NextRequest) {
         else if (message.interactive) mensajeText = JSON.stringify(message.interactive);
         else if (message.image) mensajeText = '[imagen recibida]';
         else if (message.document) mensajeText = '[documento recibido]';
+        else if (message.audio) mensajeText = '[audio recibido]';
+        else if (message.video) mensajeText = '[video recibido]';
+        else if (message.sticker) mensajeText = '[sticker recibido]';
+        else if (message.location) mensajeText = '[ubicación recibida]';
+        else if (message.contacts) mensajeText = '[contacto recibido]';
+        else if (message.reaction) mensajeText = `[reacción: ${message.reaction.emoji || ''}]`;
         else mensajeText = '[mensaje no soportado]';
 
         // Find client by phone_number_id

@@ -201,9 +201,15 @@ Retorna historial de mensajes del cliente autenticado con paginación y filtros.
 **Query Params:**
 - `page` (number, default `0`) — número de página (0-indexed)
 - `pageSize` (number, default `200`, max `200`) — registros por página
+- `all` (string `true`, opcional) — retorna todos los registros (sin paginación, hasta 100k). Anula `page` y `pageSize`.
 - `direction` (`inbound` | `outbound`, opcional) — filtrar por dirección
 - `estado` (string, opcional) — búsqueda parcial en estado
 - `search` (string, opcional) — búsqueda parcial en `from_number`, `to_number` o `mensaje`
+- `from_number` (string, opcional) — búsqueda parcial en número remitente
+- `to_number` (string, opcional) — búsqueda parcial en número destinatario
+- `mensaje` (string, opcional) — búsqueda parcial en contenido del mensaje
+- `fecha_desde` (string, opcional) — filtro por fecha >= (formato YYYY-MM-DD)
+- `fecha_hasta` (string, opcional) — filtro por fecha <= (formato YYYY-MM-DD)
 
 **Response (200):**
 ```json
@@ -366,7 +372,7 @@ Historial con detalle de estados (solo superadmin). INNER JOIN `mensajes_whatsap
 
 **Header:** `X-Cliente-Id`, `X-Usuario-Id`
 
-**Query params:** `page` (default 0), `pageSize` (default 200)
+**Query params:** `page` (default 0), `pageSize` (default 200), `all=true` (opcional, retorna todos sin paginación), `direction`, `estado`, `cliente_nombre`, `from_number`, `to_number`, `mensaje`, `fecha_desde`, `fecha_hasta`
 
 **Response:**
 ```json
@@ -399,6 +405,6 @@ Historial con nombre del cliente (solo superadmin). JOIN `mensajes_whatsapp` + `
 
 **Header:** `X-Cliente-Id`, `X-Usuario-Id`
 
-**Query params:** `page` (default 0), `pageSize` (default 200), `direction`, `estado`, `search`
+**Query params:** `page` (default 0), `pageSize` (default 200), `all=true` (opcional, retorna todos sin paginación), `direction`, `estado`, `search`, `cliente_nombre`, `from_number`, `to_number`, `mensaje`, `fecha_desde`, `fecha_hasta`
 
 **Response:** igual que `/api/mensajes` con campo adicional `cliente_nombre`.
