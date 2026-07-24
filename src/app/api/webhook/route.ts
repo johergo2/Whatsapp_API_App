@@ -91,20 +91,6 @@ export async function POST(req: NextRequest) {
           ? new Date(parseInt(message.timestamp) * 1000).toISOString()
           : null;
 
-        let mensajeText: string | null = null;
-        if (message.text?.body) mensajeText = message.text.body;
-        else if (message.button?.text) mensajeText = message.button.text;
-        else if (message.interactive) mensajeText = JSON.stringify(message.interactive);
-        else if (message.image) mensajeText = '[imagen recibida]';
-        else if (message.document) mensajeText = '[documento recibido]';
-        else if (message.audio) mensajeText = '[audio recibido]';
-        else if (message.video) mensajeText = '[video recibido]';
-        else if (message.sticker) mensajeText = '[sticker recibido]';
-        else if (message.location) mensajeText = '[ubicación recibida]';
-        else if (message.contacts) mensajeText = '[contacto recibido]';
-        else if (message.reaction) mensajeText = `[reacción: ${message.reaction.emoji || ''}]`;
-        else mensajeText = '[mensaje no soportado]';
-
         // Find client by phone_number_id
         const { data: clientes } = await supabase
           .from('clientes_whatsapp')
@@ -119,6 +105,23 @@ export async function POST(req: NextRequest) {
         const cliente = clientes[0];
         const clienteId = cliente.id;
         const displayNumber = cliente.display_number;
+
+        console.log('TRACE: message.type=', message.type, 'hasImage=', !!message.image, 'hasDoc=', !!message.document);
+        let mensajeText: string | null = null;
+        let mensajeLista = '';
+        if (message.text?.body) { mensajeText = message.text.body; console.log('TRACE: es texto'); }
+        else if (message.button?.text) { mensajeText = message.button.text; console.log('TRACE: es button'); }
+        else if (message.interactive) { mensajeText = JSON.stringify(message.interactive); console.log('TRACE: es interactive'); }
+        else if (message.image) { console.log('TRACE: ES IMAGEN id=', message.image.id, 'cid=', clienteId); mensajeText = `image:${message.image.id}:${clienteId}`; mensajeLista = '[imagen]'; }
+        else if (message.document) { console.log('TRACE: ES DOCUMENTO id=', message.document.id, 'cid=', clienteId); mensajeText = `document:${message.document.id}:${clienteId}`; mensajeLista = '[documento]'; }
+        else if (message.audio) { console.log('TRACE: es audio'); mensajeText = `audio:${message.audio.id}:${clienteId}`; mensajeLista = '[audio]'; }
+        else if (message.video) { console.log('TRACE: es video'); mensajeText = `video:${message.video.id}:${clienteId}`; mensajeLista = '[video]'; }
+        else if (message.sticker) { console.log('TRACE: es sticker'); mensajeText = '[sticker recibido]'; }
+        else if (message.location) { console.log('TRACE: es location'); mensajeText = '[ubicación recibida]'; }
+        else if (message.contacts) { console.log('TRACE: es contacts'); mensajeText = '[contacto recibido]'; }
+        else if (message.reaction) { console.log('TRACE: es reaction'); mensajeText = `[reacción: ${message.reaction.emoji || ''}]`; }
+        else { console.log('TRACE: mensaje no soportado'); mensajeText = '[mensaje no soportado]'; }
+        console.log('TRACE: mensajeText FINAL=', mensajeText);
 
         // Get Chatwoot config from variables_whatsapp
         const { data: vars } = await supabase
@@ -154,9 +157,10 @@ export async function POST(req: NextRequest) {
           .eq('telefono', fromNumber)
           .maybeSingle();
 
+        const ultimoMensajeLista = mensajeLista || mensajeText;
         if (existingConv) {
           await supabase.from('chat_whatsapp').update({
-            ultimo_mensaje: mensajeText,
+            ultimo_mensaje: ultimoMensajeLista,
             ultima_fecha: now,
             no_leidos: (existingConv.no_leidos || 0) + 1,
             fecha_actualizacion: now,
@@ -168,7 +172,7 @@ export async function POST(req: NextRequest) {
             nombre: fromNumber,
             usuario_id: null,
             usuario_creador_id: null,
-            ultimo_mensaje: mensajeText,
+            ultimo_mensaje: ultimoMensajeLista,
             ultima_fecha: now,
             no_leidos: 1,
             estado: 'activa',

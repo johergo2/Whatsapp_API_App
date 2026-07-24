@@ -479,19 +479,57 @@ export default function ChatPage() {
                             wordBreak: 'break-word',
                             boxShadow: '0 1px 1px rgba(0,0,0,.08)',
                           }}>
-                            {msg.mensaje?.startsWith('image:') || msg.mensaje?.startsWith('video:') || msg.mensaje?.startsWith('document:') ? (
-                              <>
-                                <span style={{ fontSize: 12, color: '#667781', display: 'block', marginBottom: 4 }}>
-                                  {msg.mensaje?.startsWith('image:') ? '🖼️ Imagen' : msg.mensaje?.startsWith('video:') ? '🎬 Video' : '📄 Documento'}
-                                </span>
-                                {msg.mensaje?.startsWith('image:') && (
-                                  // eslint-disable-next-line @next/next/no-img-element
-                                  <img src={msg.mensaje.replace(/^image:\s*/i, '')} alt="" style={{ maxWidth: '100%', borderRadius: 4, marginBottom: 4 }} />
-                                )}
-                              </>
-                            ) : (
-                              <span style={{ whiteSpace: 'pre-wrap' }}>{msg.mensaje || '-'}</span>
-                            )}
+                            {(() => {
+                              const m = msg.mensaje || '';
+                              const mediaMatch = m.match(/^(image|video|document):([^:]+):(\d+)$/);
+                              if (mediaMatch) {
+                                const [, tipo, mediaId, clId] = mediaMatch;
+                                const proxyUrl = `/api/media?media_id=${encodeURIComponent(mediaId)}&cliente_id=${clId}`;
+                                const label = tipo === 'image' ? '🖼️ Imagen' : tipo === 'video' ? '🎬 Video' : '📄 Documento';
+                                return (
+                                  <>
+                                    <span style={{ fontSize: 12, color: '#667781', display: 'block', marginBottom: 4 }}>{label}</span>
+                                    {tipo === 'image' && (
+                                      <img src={proxyUrl} alt="" style={{ maxWidth: '100%', borderRadius: 4, marginBottom: 4 }} />
+                                    )}
+                                    {tipo === 'video' && (
+                                      <video controls style={{ maxWidth: '100%', borderRadius: 4, marginBottom: 4 }}>
+                                        <source src={proxyUrl} />
+                                      </video>
+                                    )}
+                                    {tipo === 'document' && (
+                                      <a href={proxyUrl} target="_blank" rel="noopener noreferrer" style={{ color: '#039be5', textDecoration: 'underline', fontSize: 13 }}>
+                                        📄 Ver documento
+                                      </a>
+                                    )}
+                                  </>
+                                );
+                              }
+                              if (m.startsWith('image:') || m.startsWith('video:') || m.startsWith('document:')) {
+                                const tipo = m.startsWith('image:') ? 'image' : m.startsWith('video:') ? 'video' : 'document';
+                                const url = m.replace(/^(image|video|document):\s*/i, '');
+                                const label = tipo === 'image' ? '🖼️ Imagen' : tipo === 'video' ? '🎬 Video' : '📄 Documento';
+                                return (
+                                  <>
+                                    <span style={{ fontSize: 12, color: '#667781', display: 'block', marginBottom: 4 }}>{label}</span>
+                                    {tipo === 'image' && (
+                                      <img src={url} alt="" style={{ maxWidth: '100%', borderRadius: 4, marginBottom: 4 }} />
+                                    )}
+                                    {tipo === 'video' && (
+                                      <video controls style={{ maxWidth: '100%', borderRadius: 4, marginBottom: 4 }}>
+                                        <source src={url} />
+                                      </video>
+                                    )}
+                                    {tipo === 'document' && (
+                                      <a href={url} target="_blank" rel="noopener noreferrer" style={{ color: '#039be5', textDecoration: 'underline', fontSize: 13 }}>
+                                        📄 Ver documento
+                                      </a>
+                                    )}
+                                  </>
+                                );
+                              }
+                              return <span style={{ whiteSpace: 'pre-wrap' }}>{m || '-'}</span>;
+                            })()}
                             <div style={{ fontSize: 10, color: '#667781', textAlign: 'right', marginTop: 2, display: 'flex', alignItems: 'center', justifyContent: 'flex-end', gap: 3 }}>
                               {msg.fecha_creacion ? new Date(msg.fecha_creacion).toLocaleTimeString('es-CO', { hour: '2-digit', minute: '2-digit' }) : ''}
                               {msg.direction === 'outbound' && (
