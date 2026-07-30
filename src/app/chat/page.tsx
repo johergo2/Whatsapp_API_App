@@ -18,7 +18,7 @@ function timeAgo(dateStr: string) {
   const diffDays = Math.floor(diffHrs / 24);
   if (diffDays === 1) return 'Ayer';
   if (diffDays < 7) return `${diffDays}d`;
-  return d.toLocaleDateString('es-CO', { day: '2-digit', month: '2-digit' });
+  return d.toLocaleDateString('es-CO', { day: '2-digit', month: '2-digit', timeZone: 'America/Bogota' });
 }
 
 export default function ChatPage() {
@@ -531,7 +531,7 @@ export default function ChatPage() {
                               return <span style={{ whiteSpace: 'pre-wrap' }}>{m || '-'}</span>;
                             })()}
                             <div style={{ fontSize: 10, color: '#667781', textAlign: 'right', marginTop: 2, display: 'flex', alignItems: 'center', justifyContent: 'flex-end', gap: 3 }}>
-                              {msg.fecha_creacion ? new Date(msg.fecha_creacion).toLocaleTimeString('es-CO', { hour: '2-digit', minute: '2-digit' }) : ''}
+                              {msg.fecha_creacion ? new Date(msg.fecha_creacion).toLocaleTimeString('es-CO', { hour: '2-digit', minute: '2-digit', timeZone: 'America/Bogota' }) : ''}
                               {msg.direction === 'outbound' && (
                                 <span style={{ fontSize: 11, lineHeight: 1 }}>
                                   {msg.estado === 'read' ? '✓✓' : msg.estado === 'delivered' ? '✓✓' : msg.estado === 'sent' ? '✓' : ''}

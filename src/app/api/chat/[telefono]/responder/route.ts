@@ -51,6 +51,23 @@ export async function POST(req: NextRequest, { params }: { params: { telefono: s
       return NextResponse.json({ detail: 'META_TOKEN no configurado' }, { status: 500 });
     }
 
+    // Check if user wrote within the last 2 hours
+    const { data: lastInbound } = await supabase
+      .from('mensajes_whatsapp')
+      .select('fecha_creacion')
+      .eq('cliente_id', clienteId)
+      .eq('from_number', telefono)
+      .eq('direction', 'inbound')
+      .order('fecha_creacion', { ascending: false })
+      .limit(1)
+      .maybeSingle();
+
+    const twentyThreeHoursAgo = new Date(Date.now() - 23 * 60 * 60 * 1000).toISOString();
+    const lastMsgTime = lastInbound?.fecha_creacion;
+    if (!lastMsgTime || new Date(lastMsgTime).getTime() < new Date(twentyThreeHoursAgo).getTime()) {
+      return NextResponse.json({ detail: 'El destinatario no te ha escrito en las últimas 23 horas. Solo puedes responder si el contacto te ha enviado un mensaje en las últimas 23 horas.' }, { status: 403 });
+    }
+
     // Send text message via Meta API
     const url = `https://graph.facebook.com/v18.0/${cliente.phone_number_id}/messages`;
     const payload = {
